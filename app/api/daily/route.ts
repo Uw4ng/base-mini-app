@@ -1,6 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
 import {
     getDailyQuestionWithVotes,
+    getYesterdayResult,
+    getDayNumber,
+    getDailyStreak,
+    recordDailyVote,
     hasUserVoted,
     createVote,
     getVoteCountsByOption,
@@ -8,7 +12,7 @@ import {
 
 /**
  * GET /api/daily
- * Returns today's daily question with vote counts
+ * Returns today's daily question with vote counts, day number, yesterday result, streak
  * Query: ?fid=<user_fid>
  */
 export async function GET(request: NextRequest) {
@@ -22,16 +26,22 @@ export async function GET(request: NextRequest) {
     }
 
     const userVote = fid ? hasUserVoted(data.question.id, fid) : undefined;
+    const dayNumber = getDayNumber();
+    const yesterdayResult = getYesterdayResult();
+    const streak = fid ? getDailyStreak(fid) : null;
 
     return NextResponse.json({
         ...data,
+        dayNumber,
+        yesterdayResult,
+        streak,
         userVotedOptionId: userVote?.option_id || null,
     });
 }
 
 /**
  * POST /api/daily
- * Vote on the daily question
+ * Vote on the daily question and update streak
  * Body: { optionId, voterFid, voterUsername }
  */
 export async function POST(request: NextRequest) {
@@ -43,9 +53,11 @@ export async function POST(request: NextRequest) {
             return NextResponse.json({ error: 'No daily question today' }, { status: 404 });
         }
 
+        const voterFid = body.voterFid || 9999;
+
         const vote = createVote({
             poll_id: data.question.id,
-            voter_fid: body.voterFid || 9999,
+            voter_fid: voterFid,
             voter_username: body.voterUsername || 'anon',
             option_id: body.optionId,
         });
@@ -54,6 +66,9 @@ export async function POST(request: NextRequest) {
             return NextResponse.json({ error: 'Already voted' }, { status: 409 });
         }
 
+        // Update streak
+        const updatedStreak = recordDailyVote(voterFid);
+
         const updatedCounts = getVoteCountsByOption(data.question.id);
         const total = Object.values(updatedCounts).reduce((a, b) => a + b, 0);
 
@@ -61,6 +76,7 @@ export async function POST(request: NextRequest) {
             success: true,
             voteCounts: updatedCounts,
             totalVotes: total,
+            streak: updatedStreak,
         }, { status: 201 });
     } catch {
         return NextResponse.json({ error: 'Invalid request' }, { status: 400 });

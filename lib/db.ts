@@ -64,8 +64,17 @@ export interface DailyQuestion {
   id: string;
   question: string;
   options: PollOption[];
+  category: 'tech' | 'food' | 'lifestyle' | 'pop_culture' | 'philosophy' | 'funny';
+  day_number: number;
   active_date: string;
   created_at: string;
+}
+
+export interface DailyStreak {
+  fid: number;
+  currentStreak: number;
+  bestStreak: number;
+  lastVoteDate: string;
 }
 
 // ============================
@@ -75,6 +84,131 @@ export interface DailyQuestion {
 const polls: Poll[] = [];
 const votes: Vote[] = [];
 const dailyQuestions: DailyQuestion[] = [];
+const dailyStreaks: Map<number, DailyStreak> = new Map();
+
+// Launch date for day counter (set to 100 days ago for demo)
+const LAUNCH_DATE = new Date(Date.now() - 126 * 24 * 60 * 60 * 1000);
+
+// ============================
+// QUESTION BANK (100+ questions)
+// ============================
+
+interface BankQuestion {
+  question: string;
+  options: string[];
+  category: DailyQuestion['category'];
+}
+
+const questionBank: BankQuestion[] = [
+  // ──── TECH (20) ────
+  { question: 'Tabs or spaces?', options: ['Tabs', 'Spaces'], category: 'tech' },
+  { question: 'Best programming language?', options: ['Python', 'JavaScript', 'Rust', 'Go'], category: 'tech' },
+  { question: 'Dark mode or light mode?', options: ['Dark mode', 'Light mode', 'System auto'], category: 'tech' },
+  { question: 'iOS or Android?', options: ['iOS', 'Android', 'Both'], category: 'tech' },
+  { question: 'VS Code or JetBrains?', options: ['VS Code', 'JetBrains', 'Vim', 'Other'], category: 'tech' },
+  { question: 'Frontend or backend?', options: ['Frontend', 'Backend', 'Fullstack'], category: 'tech' },
+  { question: 'Mechanical keyboard?', options: ['Mechanical all the way', 'Laptop keyboard is fine', 'Whatever is available'], category: 'tech' },
+  { question: 'How many browser tabs do you have open right now?', options: ['< 10', '10-30', '30-100', '100+ (help)'], category: 'tech' },
+  { question: 'Best crypto wallet UX?', options: ['MetaMask', 'Coinbase Wallet', 'Rainbow', 'Rabby'], category: 'tech' },
+  { question: 'Git merge or rebase?', options: ['Merge', 'Rebase', 'Depends', 'What is git?'], category: 'tech' },
+  { question: 'AI will replace developers?', options: ['Never', 'Partially', 'Eventually', 'Already is'], category: 'tech' },
+  { question: 'Best L2 chain?', options: ['Base', 'Arbitrum', 'Optimism', 'zkSync'], category: 'tech' },
+  { question: 'Mac, Windows, or Linux?', options: ['Mac', 'Windows', 'Linux', 'ChromeOS'], category: 'tech' },
+  { question: 'Prefer REST or GraphQL?', options: ['REST', 'GraphQL', 'tRPC', 'Whatever works'], category: 'tech' },
+  { question: 'Monorepo or polyrepo?', options: ['Monorepo', 'Polyrepo', 'Depends on the project'], category: 'tech' },
+  { question: 'TypeScript or JavaScript?', options: ['TypeScript', 'JavaScript', 'Both equally'], category: 'tech' },
+  { question: 'Best way to learn coding?', options: ['YouTube', 'Docs', 'Build stuff', 'Courses'], category: 'tech' },
+  { question: 'React, Vue, or Svelte?', options: ['React', 'Vue', 'Svelte', 'Angular'], category: 'tech' },
+  { question: 'Cloud provider?', options: ['AWS', 'GCP', 'Azure', 'Vercel'], category: 'tech' },
+  { question: 'Most underrated dev tool?', options: ['Terminal', 'Figma', 'Notion', 'Docker'], category: 'tech' },
+  // ──── FOOD (18) ────
+  { question: 'Pineapple on pizza?', options: ['Yes, always', 'Absolutely not', 'Sometimes', 'Never tried'], category: 'food' },
+  { question: 'Coffee or tea?', options: ['Coffee ☕', 'Tea 🍵', 'Both', 'Neither'], category: 'food' },
+  { question: 'Best breakfast?', options: ['Eggs & toast', 'Cereal', 'Pancakes', 'Skip it'], category: 'food' },
+  { question: 'Spicy food?', options: ['Love it 🌶️', 'Mild only', 'Never', 'I eat raw chilis'], category: 'food' },
+  { question: 'Best movie snack?', options: ['Popcorn', 'Nachos', 'Candy', 'Nothing'], category: 'food' },
+  { question: 'Chocolate or vanilla?', options: ['Chocolate', 'Vanilla', 'Both', 'Strawberry'], category: 'food' },
+  { question: 'Home-cooked or takeout?', options: ['Home-cooked', 'Takeout', 'Depends on mood'], category: 'food' },
+  { question: 'Best cuisine?', options: ['Italian', 'Japanese', 'Mexican', 'Indian'], category: 'food' },
+  { question: 'Crunchy or smooth peanut butter?', options: ['Crunchy', 'Smooth', "Don't like PB"], category: 'food' },
+  { question: 'Breakfast for dinner?', options: ['Absolutely', 'Weird', 'Sometimes'], category: 'food' },
+  { question: 'Best pizza topping?', options: ['Pepperoni', 'Mushrooms', 'Margherita', 'Everything'], category: 'food' },
+  { question: 'Sushi: raw or cooked?', options: ['Raw all the way', 'Cooked only', 'Both', 'No sushi'], category: 'food' },
+  { question: 'Ice cream in a cone or cup?', options: ['Cone', 'Cup', 'Either'], category: 'food' },
+  { question: 'Water: sparkling or still?', options: ['Sparkling', 'Still', 'Depends'], category: 'food' },
+  { question: 'Best fast food chain?', options: ["McDonald's", 'Chick-fil-A', 'In-N-Out', 'Taco Bell'], category: 'food' },
+  { question: 'Energy drink of choice?', options: ['Red Bull', 'Monster', 'Coffee instead', 'None'], category: 'food' },
+  { question: 'Sweet or savory breakfast?', options: ['Sweet', 'Savory', 'Both'], category: 'food' },
+  { question: 'Avocado toast: overrated?', options: ['Overrated', 'Underrated', 'Perfectly rated'], category: 'food' },
+  // ──── LIFESTYLE (18) ────
+  { question: 'Morning person or night owl?', options: ['Morning ☀️', 'Night 🌙', "I don't sleep"], category: 'lifestyle' },
+  { question: 'Remote or office?', options: ['Remote', 'Office', 'Hybrid'], category: 'lifestyle' },
+  { question: 'Dogs or cats?', options: ['Dogs 🐕', 'Cats 🐈', 'Both', 'Neither'], category: 'lifestyle' },
+  { question: 'Beach or mountains?', options: ['Beach 🏖️', 'Mountains ⛰️', 'Both', 'City'], category: 'lifestyle' },
+  { question: 'How many hours of sleep?', options: ['< 6', '6-7', '8+', "What is sleep?"], category: 'lifestyle' },
+  { question: 'Workout routine?', options: ['Gym', 'Running', 'Yoga', 'None'], category: 'lifestyle' },
+  { question: 'Paper books or e-books?', options: ['Paper books', 'E-books', 'Audiobooks', 'All'], category: 'lifestyle' },
+  { question: 'Urban or suburban?', options: ['Urban', 'Suburban', 'Rural', 'Nomad'], category: 'lifestyle' },
+  { question: 'New Year resolution?', options: ['Always', 'Never', 'Sometimes', 'Already failed'], category: 'lifestyle' },
+  { question: 'Clean desk or messy desk?', options: ['Clean', 'Organized chaos', 'Messy'], category: 'lifestyle' },
+  { question: 'Cold weather or hot weather?', options: ['Cold ❄️', 'Hot ☀️', 'Mild 🌤️'], category: 'lifestyle' },
+  { question: 'Early for meetings or just on time?', options: ['5 min early', 'Right on time', 'Fashionably late'], category: 'lifestyle' },
+  { question: 'Phone notifications: on or off?', options: ['All on', 'Only important', 'All off', 'DND forever'], category: 'lifestyle' },
+  { question: 'How many countries have you visited?', options: ['0-5', '5-15', '15-30', '30+'], category: 'lifestyle' },
+  { question: 'Shower: morning or night?', options: ['Morning', 'Night', 'Both', 'Depends'], category: 'lifestyle' },
+  { question: 'Reusable bags or plastic?', options: ['Reusable', 'Plastic (sorry)', 'I forget mine'], category: 'lifestyle' },
+  { question: 'Commute: drive, transit, or walk?', options: ['Drive', 'Public transit', 'Walk/bike', 'WFH'], category: 'lifestyle' },
+  { question: 'Minimalist or maximalist?', options: ['Minimalist', 'Maximalist', 'Somewhere in between'], category: 'lifestyle' },
+  // ──── POP CULTURE (16) ────
+  { question: 'Marvel or DC?', options: ['Marvel', 'DC', 'Both', 'Neither'], category: 'pop_culture' },
+  { question: 'Star Wars or Star Trek?', options: ['Star Wars', 'Star Trek', 'Both', 'Neither'], category: 'pop_culture' },
+  { question: 'Best social platform?', options: ['Farcaster', 'X/Twitter', 'Instagram', 'TikTok'], category: 'pop_culture' },
+  { question: 'Streaming service?', options: ['Netflix', 'Disney+', 'HBO Max', 'YouTube'], category: 'pop_culture' },
+  { question: 'Best decade for music?', options: ['80s', '90s', '2000s', '2010s+'], category: 'pop_culture' },
+  { question: 'Console gaming?', options: ['PlayStation', 'Xbox', 'Nintendo', 'PC only'], category: 'pop_culture' },
+  { question: 'Best superhero?', options: ['Spider-Man', 'Batman', 'Iron Man', 'Superman'], category: 'pop_culture' },
+  { question: 'Hogwarts house?', options: ['Gryffindor', 'Slytherin', 'Ravenclaw', 'Hufflepuff'], category: 'pop_culture' },
+  { question: 'Best animated movie?', options: ['Spirited Away', 'Toy Story', 'Spider-Verse', 'Up'], category: 'pop_culture' },
+  { question: 'Podcast or music while working?', options: ['Podcast', 'Music', 'Silence', 'Lo-fi beats'], category: 'pop_culture' },
+  { question: 'Best video game of all time?', options: ['Zelda: BOTW', 'Minecraft', 'GTA V', 'The Last of Us'], category: 'pop_culture' },
+  { question: 'Reality TV: guilty pleasure?', options: ['Love it', 'Hate it', 'Secretly watch it'], category: 'pop_culture' },
+  { question: 'Best meme format?', options: ['Drake', 'Distracted BF', 'This is fine 🔥', 'Wojak'], category: 'pop_culture' },
+  { question: 'Binge-watch or one episode at a time?', options: ['Binge all day', 'One per day', 'Depends on the show'], category: 'pop_culture' },
+  { question: 'Best music genre?', options: ['Hip-hop', 'Pop', 'Rock', 'Electronic'], category: 'pop_culture' },
+  { question: 'Favorite emoji?', options: ['😂', '🔥', '💀', '❤️'], category: 'pop_culture' },
+  // ──── PHILOSOPHY (14) ────
+  { question: 'Would you live on Mars?', options: ['Yes', 'No', "Only if there's Wi-Fi"], category: 'philosophy' },
+  { question: 'Free will or determinism?', options: ['Free will', 'Determinism', 'Both', 'I chose not to answer'], category: 'philosophy' },
+  { question: 'Is a hot dog a sandwich?', options: ['Yes', 'No', 'It transcends categories'], category: 'philosophy' },
+  { question: 'Would you want to know the future?', options: ['Yes', 'No', 'Only the good parts'], category: 'philosophy' },
+  { question: 'Simulation theory: do you believe?', options: ['Yes', 'No', 'Maybe', 'Glitch confirmed'], category: 'philosophy' },
+  { question: 'One superpower?', options: ['Fly', 'Invisibility', 'Time travel', 'Teleportation'], category: 'philosophy' },
+  { question: 'Would you upload your brain?', options: ['Absolutely', 'Never', 'Maybe in 50 years'], category: 'philosophy' },
+  { question: 'Is money the root of all evil?', options: ['Yes', 'No', 'Lack of money is'], category: 'philosophy' },
+  { question: 'Would you take a one-way trip to another galaxy?', options: ['Yes', 'No', 'Only with friends'], category: 'philosophy' },
+  { question: 'Nature vs nurture?', options: ['Nature', 'Nurture', 'Both equally'], category: 'philosophy' },
+  { question: 'If you could relive one age, which?', options: ['Childhood', 'Teens', '20s', 'Right now'], category: 'philosophy' },
+  { question: 'Is time travel possible?', options: ['Yes', 'No', 'Already happening'], category: 'philosophy' },
+  { question: 'Would you want to be immortal?', options: ['Yes', 'No', 'Only with off switch'], category: 'philosophy' },
+  { question: 'Is privacy dead?', options: ['Yes', 'No', 'We can fix it', 'Never had it'], category: 'philosophy' },
+  // ──── FUNNY (16) ────
+  { question: 'If your code worked first try, what would you do?', options: ['Screenshot it', 'Celebrate', 'Check for bugs', 'Wake up'], category: 'funny' },
+  { question: 'Most relatable dev experience?', options: ['"Works on my machine"', 'Stack Overflow', 'Merge conflicts', 'Imposter syndrome'], category: 'funny' },
+  { question: 'Git commit message style?', options: ['Descriptive', '"fix"', '"wip"', '"please work"'], category: 'funny' },
+  { question: 'What is the correct pronunciation: GIF?', options: ['Hard G (gif)', 'Soft G (jif)', 'I avoid saying it'], category: 'funny' },
+  { question: 'WiFi goes down — first reaction?', options: ['Panic', 'Go outside?', 'Mobile hotspot', 'Accept fate'], category: 'funny' },
+  { question: 'How many unread emails?', options: ['0 (inbox zero 💪)', '1-50', '100-1000', '5000+ (and counting)'], category: 'funny' },
+  { question: 'Your Slack status?', options: ['🟢 Available', '🔴 Do not disturb', '🏖️ On vacation', '👻 Ghost'], category: 'funny' },
+  { question: 'Last Google search?', options: ['How to center a div', 'Is cereal soup?', 'Why is my code broken', 'Normal things'], category: 'funny' },
+  { question: 'Monday mood?', options: ['Motivated 💪', 'Tired 😴', 'Already counting to Friday', 'What day is it?'], category: 'funny' },
+  { question: 'What would your error code be?', options: ['404', '418 (I am a teapot)', '500', '200 (I am fine)'], category: 'funny' },
+  { question: 'Spirit animal?', options: ['Cat 🐱 (sleep)', 'Dog 🐶 (chaos)', 'Sloth 🦥 (vibes)', 'Coffee ☕'], category: 'funny' },
+  { question: 'Debugging strategy?', options: ['console.log everything', 'Rubber duck', 'Pray', 'Rewrite from scratch'], category: 'funny' },
+  { question: 'Your browser history is now public. Reaction?', options: ['Totally fine', 'Mildly concerned', 'Witness protection', 'Already cleared'], category: 'funny' },
+  { question: 'If code had a smell, yours would be?', options: ['Fresh coffee ☕', 'Old pizza 🍕', 'Flowers 🌸', 'Burning 🔥'], category: 'funny' },
+  { question: 'How do you name variables?', options: ['camelCase', 'snake_case', 'x, y, z', 'temp, temp2, temp3'], category: 'funny' },
+  { question: 'Your deploy strategy?', options: ['CI/CD pipeline', 'Friday afternoon YOLO', '"It works locally"', 'Let the intern do it'], category: 'funny' },
+];
 
 // Mock Farcaster friends/mutuals
 const farcasterUsers: FarcasterUser[] = [
@@ -105,18 +239,38 @@ function seedData() {
   const in2Hours = new Date(now.getTime() + 2 * 60 * 60 * 1000);
   const in6Hours = new Date(now.getTime() + 6 * 60 * 60 * 1000);
 
-  // Daily question
+  // Daily question — auto-select from bank based on day number
+  const dayNumber = getDayNumber();
+  const todayStr = now.toISOString().split('T')[0];
+  const bankIndex = (dayNumber - 1) % questionBank.length;
+  const bankQ = questionBank[bankIndex];
+  const dqId = uuidv4();
+
   dailyQuestions.push({
-    id: uuidv4(),
-    question: "Pineapple on pizza?",
-    options: [
-      { id: 'dq-yes', text: 'Yes, always' },
-      { id: 'dq-no', text: 'Absolutely not' },
-      { id: 'dq-sometimes', text: 'Sometimes' },
-      { id: 'dq-never-tried', text: 'Never tried' },
-    ],
-    active_date: now.toISOString().split('T')[0],
+    id: dqId,
+    question: bankQ.question,
+    options: bankQ.options.map((text, i) => ({ id: `dq-${i}`, text })),
+    category: bankQ.category,
+    day_number: dayNumber,
+    active_date: todayStr,
     created_at: new Date(now.getTime() - 3600000 * 8).toISOString(),
+  });
+
+  // Add yesterday's question too (for "yesterday's result" feature)
+  const yesterdayDate = new Date(now.getTime() - 86400000);
+  const yesterdayStr = yesterdayDate.toISOString().split('T')[0];
+  const yesterdayBankIndex = (dayNumber - 2) % questionBank.length;
+  const yBankQ = questionBank[yesterdayBankIndex >= 0 ? yesterdayBankIndex : 0];
+  const yDqId = uuidv4();
+
+  dailyQuestions.push({
+    id: yDqId,
+    question: yBankQ.question,
+    options: yBankQ.options.map((text, i) => ({ id: `ydq-${i}`, text })),
+    category: yBankQ.category,
+    day_number: dayNumber - 1,
+    active_date: yesterdayStr,
+    created_at: new Date(yesterdayDate.getTime() - 3600000 * 8).toISOString(),
   });
 
   // Poll 1
@@ -367,7 +521,8 @@ function seedData() {
     });
   }
 
-  // Daily question votes
+  // Daily question votes (today)
+  const dqOptions = dailyQuestions[0].options;
   for (let i = 0; i < 340; i++) {
     votes.push({
       id: uuidv4(),
@@ -375,12 +530,36 @@ function seedData() {
       voter_fid: 8000 + i,
       voter_username: `user${i}`,
       voter_avatar: null,
-      option_id: ['dq-yes', 'dq-no', 'dq-sometimes', 'dq-never-tried'][i % 4],
+      option_id: dqOptions[i % dqOptions.length].id,
       prediction: null,
       reaction: null,
       created_at: new Date(now.getTime() - Math.random() * 3600000 * 8).toISOString(),
     });
   }
+
+  // Yesterday's daily question votes (1,247 votes)
+  const yDqOptions = dailyQuestions[1].options;
+  for (let i = 0; i < 1247; i++) {
+    votes.push({
+      id: uuidv4(),
+      poll_id: dailyQuestions[1].id,
+      voter_fid: 9000 + i,
+      voter_username: `voter${i}`,
+      voter_avatar: null,
+      option_id: i < 540 ? yDqOptions[0].id : yDqOptions[i % yDqOptions.length].id,
+      prediction: null,
+      reaction: null,
+      created_at: new Date(yesterdayDate.getTime() - Math.random() * 3600000 * 16).toISOString(),
+    });
+  }
+
+  // Seed demo streak for current user
+  dailyStreaks.set(9999, {
+    fid: 9999,
+    currentStreak: 12,
+    bestStreak: 23,
+    lastVoteDate: todayStr,
+  });
 }
 
 seedData();
@@ -518,6 +697,91 @@ export function getDailyQuestionWithVotes(): {
   const vc = getVoteCountsByOption(dq.id);
   const total = Object.values(vc).reduce((a, b) => a + b, 0);
   return { question: dq, voteCounts: vc, totalVotes: total };
+}
+
+/** Get the current day number since launch */
+export function getDayNumber(): number {
+  const now = new Date();
+  const diff = now.getTime() - LAUNCH_DATE.getTime();
+  return Math.floor(diff / (24 * 60 * 60 * 1000)) + 1;
+}
+
+/** Get yesterday's daily question result */
+export function getYesterdayResult(): {
+  question: string;
+  winnerText: string;
+  winnerPercent: number;
+  totalVotes: number;
+  dayNumber: number;
+} | null {
+  const yesterday = new Date(Date.now() - 86400000).toISOString().split('T')[0];
+  const yq = dailyQuestions.find(q => q.active_date === yesterday);
+  if (!yq) return null;
+
+  const vc = getVoteCountsByOption(yq.id);
+  const total = Object.values(vc).reduce((a, b) => a + b, 0);
+  if (total === 0) return null;
+
+  let maxVotes = 0;
+  let winnerId = '';
+  for (const [id, count] of Object.entries(vc)) {
+    if (count > maxVotes) {
+      maxVotes = count;
+      winnerId = id;
+    }
+  }
+
+  const winnerOption = yq.options.find(o => o.id === winnerId);
+  return {
+    question: yq.question,
+    winnerText: winnerOption?.text || 'Unknown',
+    winnerPercent: Math.round((maxVotes / total) * 100),
+    totalVotes: total,
+    dayNumber: yq.day_number,
+  };
+}
+
+/** Get user's daily question streak */
+export function getDailyStreak(fid: number): DailyStreak {
+  return dailyStreaks.get(fid) || {
+    fid,
+    currentStreak: 0,
+    bestStreak: 0,
+    lastVoteDate: '',
+  };
+}
+
+/** Record a daily question vote and update streak */
+export function recordDailyVote(fid: number): DailyStreak {
+  const today = new Date().toISOString().split('T')[0];
+  const yesterday = new Date(Date.now() - 86400000).toISOString().split('T')[0];
+  const existing = dailyStreaks.get(fid);
+
+  if (existing) {
+    if (existing.lastVoteDate === today) return existing; // Already voted today
+    if (existing.lastVoteDate === yesterday) {
+      // Consecutive day — extend streak
+      existing.currentStreak += 1;
+      existing.bestStreak = Math.max(existing.bestStreak, existing.currentStreak);
+      existing.lastVoteDate = today;
+      return existing;
+    } else {
+      // Streak broken — reset to 1
+      existing.currentStreak = 1;
+      existing.lastVoteDate = today;
+      return existing;
+    }
+  }
+
+  // New user
+  const streak: DailyStreak = {
+    fid,
+    currentStreak: 1,
+    bestStreak: 1,
+    lastVoteDate: today,
+  };
+  dailyStreaks.set(fid, streak);
+  return streak;
 }
 
 export function getTrendingPolls(limit = 5): Poll[] {
@@ -724,7 +988,7 @@ export function getUserStats(fid: number): UserStatsData {
     totalVotes: userVotes.length,
     pollsCreated: userPolls.length,
     majorityPercent,
-    streak: 5, // Mock streak
+    streak: getDailyStreak(fid).currentStreak,
     mostActiveDay,
     topCategory: 'Tech 💻', // Mock category
     funLabel,

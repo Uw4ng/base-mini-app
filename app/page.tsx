@@ -27,10 +27,26 @@ interface DailyQuestionData {
     id: string;
     question: string;
     options: { id: string; text: string }[];
+    category: string;
+    day_number: number;
     active_date: string;
   };
   voteCounts: Record<string, number>;
   totalVotes: number;
+  dayNumber: number;
+  yesterdayResult: {
+    question: string;
+    winnerText: string;
+    winnerPercent: number;
+    totalVotes: number;
+    dayNumber: number;
+  } | null;
+  streak: {
+    fid: number;
+    currentStreak: number;
+    bestStreak: number;
+    lastVoteDate: string;
+  } | null;
   userVotedOptionId: string | null;
 }
 
