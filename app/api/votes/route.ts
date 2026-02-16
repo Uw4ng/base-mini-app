@@ -1,66 +1,92 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createVote, hasUserVoted, getPollById, getVoteCountsByOption, getVotesForPoll } from '@/lib/db';
+import {
+    getPollById,
+    createVote,
+    addReaction,
+    getVoteCountsByOption,
+    getMajorityOptionId,
+    hasUserVoted,
+} from '@/lib/db';
 
+/**
+ * POST /api/votes
+ * Body: { pollId, optionId, voterFid, voterUsername, voterAvatar?, prediction?, reaction? }
+ */
 export async function POST(request: NextRequest) {
     try {
         const body = await request.json();
-        const { poll_id, voter_fid, voter_username, voter_avatar, option_id, prediction, reaction } = body;
 
-        if (!poll_id || !option_id) {
+        const { pollId, optionId, voterFid, voterUsername, voterAvatar, prediction, reaction } = body;
+
+        if (!pollId || !optionId || !voterFid) {
             return NextResponse.json(
-                { error: 'poll_id and option_id are required' },
+                { error: 'pollId, optionId, and voterFid are required' },
                 { status: 400 }
             );
         }
 
-        const poll = getPollById(poll_id);
+        // Check poll exists
+        const poll = getPollById(pollId);
         if (!poll) {
             return NextResponse.json({ error: 'Poll not found' }, { status: 404 });
         }
 
-        // Check if poll has expired
+        // Check poll not expired
         if (poll.expires_at && new Date(poll.expires_at) < new Date()) {
             return NextResponse.json({ error: 'Poll has expired' }, { status: 400 });
         }
 
-        // Check already voted
-        const existing = hasUserVoted(poll_id, voter_fid || 9999);
-        if (existing) {
-            return NextResponse.json(
-                { error: 'You have already voted on this poll' },
-                { status: 409 }
-            );
+        // Check valid option
+        const validOption = poll.options.find(o => o.id === optionId);
+        if (!validOption) {
+            return NextResponse.json({ error: 'Invalid option' }, { status: 400 });
         }
 
+        // Check duplicate
+        const existingVote = hasUserVoted(pollId, voterFid);
+        if (existingVote) {
+            // If they already voted, allow adding a reaction only
+            if (reaction) {
+                addReaction(pollId, voterFid, reaction);
+            }
+            const voteCounts = getVoteCountsByOption(pollId);
+            return NextResponse.json({
+                error: 'Already voted',
+                voteCounts,
+                totalVotes: poll.total_votes,
+                userVotedOptionId: existingVote.option_id,
+            }, { status: 409 });
+        }
+
+        // Create the vote
         const vote = createVote({
-            poll_id,
-            voter_fid: voter_fid || 9999,
-            voter_username: voter_username || 'anonymous',
-            voter_avatar: voter_avatar || null,
-            option_id,
+            poll_id: pollId,
+            voter_fid: voterFid,
+            voter_username: voterUsername || 'anon',
+            voter_avatar: voterAvatar || null,
+            option_id: optionId,
             prediction: prediction || null,
             reaction: reaction || null,
         });
 
         if (!vote) {
-            return NextResponse.json(
-                { error: 'Failed to create vote' },
-                { status: 500 }
-            );
+            return NextResponse.json({ error: 'Failed to create vote' }, { status: 500 });
         }
 
-        // Return updated counts
-        const voteCounts = getVoteCountsByOption(poll_id);
-        const updatedPoll = getPollById(poll_id);
-        const recentVoters = getVotesForPoll(poll_id).slice(-5);
+        // Build response
+        const voteCounts = getVoteCountsByOption(pollId);
+        const majorityId = getMajorityOptionId(pollId);
+        const predictionCorrect = prediction ? prediction === majorityId : null;
 
         return NextResponse.json({
-            vote,
+            success: true,
+            voteId: vote.id,
             voteCounts,
-            totalVotes: updatedPoll?.total_votes || 0,
-            recentVoters,
+            totalVotes: poll.total_votes,
+            majorityOptionId: majorityId,
+            predictionCorrect,
         }, { status: 201 });
     } catch {
-        return NextResponse.json({ error: 'Invalid request' }, { status: 400 });
+        return NextResponse.json({ error: 'Invalid request body' }, { status: 400 });
     }
 }

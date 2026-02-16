@@ -9,6 +9,7 @@ interface CreatePollProps {
         options: { id: string; text: string }[];
         poll_type: string;
         is_anonymous: boolean;
+        is_prediction: boolean;
         expires_at: string | null;
         is_onchain: boolean;
     }) => void;
@@ -23,6 +24,7 @@ export default function CreatePoll({ onSubmit, onClose }: CreatePollProps) {
     const [isAnonymous, setIsAnonymous] = useState(false);
     const [expiryHours, setExpiryHours] = useState<number | null>(24);
     const [isOnchain, setIsOnchain] = useState(false);
+    const [isPrediction, setIsPrediction] = useState(false);
     const [isSubmitting, setIsSubmitting] = useState(false);
 
     const addOption = () => {
@@ -64,6 +66,7 @@ export default function CreatePoll({ onSubmit, onClose }: CreatePollProps) {
             options: pollOptions,
             poll_type: pollType,
             is_anonymous: isAnonymous,
+            is_prediction: isPrediction,
             expires_at: expiresAt,
             is_onchain: isOnchain,
         });
@@ -331,6 +334,39 @@ export default function CreatePoll({ onSubmit, onClose }: CreatePollProps) {
                                         width: '20px', height: '20px',
                                         top: '2px',
                                         transform: isOnchain ? 'translateX(22px)' : 'translateX(2px)',
+                                    }}
+                                />
+                            </div>
+                        </button>
+
+                        {/* Prediction mode */}
+                        <button
+                            onClick={() => setIsPrediction(!isPrediction)}
+                            className="flex items-center justify-between touch-target w-full"
+                            style={{
+                                padding: 'var(--space-3) var(--space-4)',
+                                borderRadius: 'var(--radius-sm)',
+                                background: 'var(--bg-tertiary)',
+                                border: 'none',
+                            }}
+                        >
+                            <div className="text-left">
+                                <div className="text-[14px] font-medium" style={{ color: 'var(--text-primary)' }}>🎯 Prediction mode</div>
+                                <div className="text-[12px]" style={{ color: 'var(--text-secondary)' }}>Players guess the majority pick</div>
+                            </div>
+                            <div
+                                className="relative rounded-full transition-colors"
+                                style={{
+                                    width: '44px', height: '24px',
+                                    background: isPrediction ? 'var(--accent-orange)' : 'var(--bg-hover)',
+                                }}
+                            >
+                                <div
+                                    className="absolute rounded-full bg-white shadow transition-transform"
+                                    style={{
+                                        width: '20px', height: '20px',
+                                        top: '2px',
+                                        transform: isPrediction ? 'translateX(22px)' : 'translateX(2px)',
                                     }}
                                 />
                             </div>

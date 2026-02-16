@@ -8,24 +8,41 @@ import ThisOrThat from '@/app/components/poll/ThisOrThat';
 import ResultCard from '@/app/components/poll/ResultCard';
 import ReactionBar from '@/app/components/social/ReactionBar';
 import ShareButton from '@/app/components/social/ShareButton';
-import type { Poll } from '@/lib/db';
+import type { Poll, PollOption } from '@/lib/db';
+
+interface EnrichedPoll extends Poll {
+    voteCounts?: Record<string, number>;
+    userVotedOptionId?: string | null;
+    userPrediction?: string | null;
+    userReaction?: string | null;
+    predictionCorrect?: boolean | null;
+    majorityOptionId?: string | null;
+    recentVoters?: { fid: number; username: string; avatar: string | null }[];
+    reactions?: { fid: number; username: string; reaction: string; avatar: string | null }[];
+}
+
+const USER_FID = 9999;
 
 export default function PollDetailPage() {
     const params = useParams();
     const router = useRouter();
     const pollId = params.id as string;
 
-    const [poll, setPoll] = useState<(Poll & { voteCounts?: Record<string, number> }) | null>(null);
+    const [poll, setPoll] = useState<EnrichedPoll | null>(null);
     const [loading, setLoading] = useState(true);
     const [voted, setVoted] = useState<string | null>(null);
     const [showResultCard, setShowResultCard] = useState(false);
 
     const fetchPoll = useCallback(async () => {
         try {
-            const res = await fetch('/api/polls');
+            const res = await fetch(`/api/polls/${pollId}?fid=${USER_FID}`);
+            if (!res.ok) {
+                setLoading(false);
+                return;
+            }
             const data = await res.json();
-            const found = data.polls?.find((p: Poll) => p.id === pollId);
-            if (found) setPoll(found);
+            setPoll(data);
+            if (data.userVotedOptionId) setVoted(data.userVotedOptionId);
         } catch (error) {
             console.error('Failed to fetch poll:', error);
         } finally {
@@ -37,25 +54,73 @@ export default function PollDetailPage() {
         fetchPoll();
     }, [fetchPoll]);
 
-    const handleVote = async (pId: string, optionId: string) => {
+    // Real-time polling every 15s
+    useEffect(() => {
+        const interval = setInterval(async () => {
+            try {
+                const res = await fetch(`/api/polls/${pollId}?fid=${USER_FID}`);
+                if (res.ok) {
+                    const data = await res.json();
+                    setPoll(prev => prev ? {
+                        ...prev,
+                        voteCounts: data.voteCounts,
+                        total_votes: data.total_votes,
+                        reactions: data.reactions,
+                        recentVoters: data.recentVoters,
+                    } : data);
+                }
+            } catch {
+                // Silently fail
+            }
+        }, 15000);
+        return () => clearInterval(interval);
+    }, [pollId]);
+
+    const handleVote = async (pId: string, optionId: string, prediction?: string) => {
         setVoted(optionId);
         try {
             const res = await fetch('/api/votes', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
-                    poll_id: pId,
-                    option_id: optionId,
-                    voter_fid: 9999,
-                    voter_username: 'quickpoll.dev',
+                    pollId: pId,
+                    optionId,
+                    voterFid: USER_FID,
+                    voterUsername: 'quickpoll.dev',
+                    prediction: prediction || null,
                 }),
             });
             const data = await res.json();
             if (data.voteCounts && poll) {
-                setPoll({ ...poll, voteCounts: data.voteCounts, total_votes: data.totalVotes });
+                setPoll({
+                    ...poll,
+                    voteCounts: data.voteCounts,
+                    total_votes: data.totalVotes,
+                    userVotedOptionId: optionId,
+                    predictionCorrect: data.predictionCorrect,
+                    majorityOptionId: data.majorityOptionId,
+                });
             }
         } catch (error) {
             console.error('Vote failed:', error);
+        }
+    };
+
+    const handleReaction = async (_pollId: string, reaction: string) => {
+        try {
+            await fetch('/api/votes', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    pollId: _pollId,
+                    optionId: 'reaction-only',
+                    voterFid: USER_FID,
+                    voterUsername: 'quickpoll.dev',
+                    reaction,
+                }),
+            });
+        } catch {
+            // Silently fail
         }
     };
 
@@ -167,9 +232,9 @@ export default function PollDetailPage() {
                 ) : (
                     <PollCard
                         poll={poll}
-                        voteCounts={poll.voteCounts || {}}
-                        userVotedOptionId={voted}
+                        currentUserFid={USER_FID}
                         onVote={handleVote}
+                        onReaction={handleReaction}
                     />
                 )}
 
@@ -186,36 +251,38 @@ export default function PollDetailPage() {
                     </div>
                 )}
 
-                {/* Reactions */}
-                <div className="poll-card">
-                    <h3 className="text-[14px] font-bold" style={{ marginBottom: 'var(--space-3)' }}>Reactions</h3>
-                    <div className="flex flex-col" style={{ gap: 'var(--space-2)', marginBottom: 'var(--space-3)' }}>
-                        {[
-                            { user: 'alice', reaction: 'Great question! 🔥', fid: 2000 },
-                            { user: 'bob', reaction: '💯', fid: 2001 },
-                            { user: 'charlie', reaction: 'Mini Apps FTW! 🚀', fid: 2002 },
-                        ].map((r, i) => (
-                            <div key={i} className="flex items-start animate-fade-in" style={{ gap: 'var(--space-2)', animationDelay: `${i * 100}ms` }}>
-                                <div
-                                    className="flex items-center justify-center text-[10px] font-bold text-white flex-shrink-0"
-                                    style={{
-                                        width: '24px', height: '24px',
-                                        borderRadius: '50%',
-                                        marginTop: '1px',
-                                        background: `hsl(${(r.fid * 137.508) % 360}, 55%, 45%)`,
-                                    }}
-                                >
-                                    {r.user.charAt(0).toUpperCase()}
+                {/* Reactions section */}
+                {poll.reactions && poll.reactions.length > 0 && (
+                    <div className="poll-card">
+                        <h3 className="text-[14px] font-bold" style={{ marginBottom: 'var(--space-3)' }}>Reactions</h3>
+                        <div className="flex flex-col" style={{ gap: 'var(--space-2)', marginBottom: 'var(--space-3)' }}>
+                            {poll.reactions.map((r: { fid: number; username: string; reaction: string; avatar: string | null }, i: number) => (
+                                <div key={i} className="flex items-start animate-fade-in" style={{ gap: 'var(--space-2)', animationDelay: `${i * 100}ms` }}>
+                                    <div
+                                        className="flex items-center justify-center text-[10px] font-bold text-white flex-shrink-0"
+                                        style={{
+                                            width: '24px', height: '24px',
+                                            borderRadius: '50%',
+                                            marginTop: '1px',
+                                            background: poll.is_anonymous
+                                                ? 'var(--bg-hover)'
+                                                : `hsl(${(r.fid * 137.508) % 360}, 55%, 45%)`,
+                                        }}
+                                    >
+                                        {poll.is_anonymous ? '?' : r.username.charAt(0).toUpperCase()}
+                                    </div>
+                                    <div className="text-reaction">
+                                        <span className="font-medium" style={{ color: 'var(--accent-blue)' }}>
+                                            {poll.is_anonymous ? 'Anonymous' : `@${r.username}`}
+                                        </span>
+                                        <span style={{ color: 'var(--text-secondary)', marginLeft: '4px' }}>{r.reaction}</span>
+                                    </div>
                                 </div>
-                                <div className="text-reaction">
-                                    <span className="font-medium" style={{ color: 'var(--accent-blue)' }}>@{r.user}</span>
-                                    <span style={{ color: 'var(--text-secondary)', marginLeft: '4px' }}>{r.reaction}</span>
-                                </div>
-                            </div>
-                        ))}
+                            ))}
+                        </div>
+                        {hasVoted && <ReactionBar pollId={poll.id} />}
                     </div>
-                    <ReactionBar pollId={poll.id} />
-                </div>
+                )}
 
                 {/* Result card toggle */}
                 <button

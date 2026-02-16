@@ -1,32 +1,42 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getPolls, createPoll, getTrendingPolls, getVoteCountsByOption } from '@/lib/db';
+import { getPolls, getTrendingPolls, createPoll, enrichPoll } from '@/lib/db';
 
+/**
+ * GET /api/polls
+ * Query params:
+ *   ?cursor=<timestamp> — for pagination
+ *   &limit=10
+ *   &fid=<user_fid> — to include user's vote status
+ *   &trending=true — for trending sort
+ */
 export async function GET(request: NextRequest) {
-    const { searchParams } = new URL(request.url);
-    const trending = searchParams.get('trending');
+    const searchParams = request.nextUrl.searchParams;
+    const trending = searchParams.get('trending') === 'true';
+    const cursor = searchParams.get('cursor') || undefined;
+    const limit = parseInt(searchParams.get('limit') || '10', 10);
+    const fid = searchParams.get('fid') ? parseInt(searchParams.get('fid')!, 10) : undefined;
 
-    let polls;
-    if (trending === 'true') {
-        polls = getTrendingPolls(5);
-    } else {
-        polls = getPolls();
+    if (trending) {
+        const trendingPolls = getTrendingPolls(limit);
+        const enriched = trendingPolls.map(p => enrichPoll(p, fid));
+        return NextResponse.json({ polls: enriched, nextCursor: null });
     }
 
-    // Attach vote counts to each poll
-    const pollsWithCounts = polls.map(poll => ({
-        ...poll,
-        voteCounts: getVoteCountsByOption(poll.id),
-    }));
+    const { polls, nextCursor } = getPolls({ cursor, limit });
+    const enriched = polls.map(p => enrichPoll(p, fid));
 
-    return NextResponse.json({ polls: pollsWithCounts });
+    return NextResponse.json({ polls: enriched, nextCursor });
 }
 
+/**
+ * POST /api/polls
+ * Body: { creator_fid, creator_username, question, options, poll_type, is_anonymous, is_prediction, expires_at, is_onchain }
+ */
 export async function POST(request: NextRequest) {
     try {
         const body = await request.json();
-        const { question, options, poll_type, is_anonymous, expires_at, is_onchain, creator_fid, creator_username, creator_avatar } = body;
 
-        if (!question || !options || options.length < 2) {
+        if (!body.question || !body.options || body.options.length < 2) {
             return NextResponse.json(
                 { error: 'Question and at least 2 options are required' },
                 { status: 400 }
@@ -34,19 +44,20 @@ export async function POST(request: NextRequest) {
         }
 
         const poll = createPoll({
-            creator_fid: creator_fid || 9999,
-            creator_username: creator_username || 'anonymous',
-            creator_avatar: creator_avatar || null,
-            question,
-            poll_type: poll_type || 'standard',
-            options,
-            is_anonymous: is_anonymous || false,
-            expires_at: expires_at || null,
-            is_onchain: is_onchain || false,
+            creator_fid: body.creator_fid || 9999,
+            creator_username: body.creator_username || 'anon',
+            creator_avatar: body.creator_avatar || null,
+            question: body.question,
+            poll_type: body.poll_type || 'standard',
+            options: body.options,
+            is_anonymous: body.is_anonymous || false,
+            is_prediction: body.is_prediction || false,
+            expires_at: body.expires_at || null,
+            is_onchain: body.is_onchain || false,
         });
 
-        return NextResponse.json({ poll }, { status: 201 });
+        return NextResponse.json({ poll: enrichPoll(poll) }, { status: 201 });
     } catch {
-        return NextResponse.json({ error: 'Invalid request' }, { status: 400 });
+        return NextResponse.json({ error: 'Invalid request body' }, { status: 400 });
     }
 }

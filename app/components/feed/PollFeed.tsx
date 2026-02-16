@@ -90,8 +90,7 @@ export default function PollFeed({ initialPolls }: PollFeedProps) {
                 >
                     <PollCard
                         poll={poll}
-                        voteCounts={poll.voteCounts || {}}
-                        onVote={handleVote}
+                        onVote={(pollId, optionId) => handleVote(pollId, optionId)}
                     />
                 </div>
             ))}

@@ -1,6 +1,9 @@
 import { v4 as uuidv4 } from 'uuid';
 
-// Types
+// ============================
+// TYPES
+// ============================
+
 export interface PollOption {
   id: string;
   text: string;
@@ -16,6 +19,7 @@ export interface Poll {
   poll_type: 'standard' | 'image' | 'this_or_that' | 'rating';
   options: PollOption[];
   is_anonymous: boolean;
+  is_prediction: boolean;
   expires_at: string | null;
   is_onchain: boolean;
   onchain_tx: string | null;
@@ -43,34 +47,41 @@ export interface DailyQuestion {
   created_at: string;
 }
 
-// In-memory store
+// ============================
+// IN-MEMORY STORE
+// ============================
+
 const polls: Poll[] = [];
 const votes: Vote[] = [];
 const dailyQuestions: DailyQuestion[] = [];
 
-// Seed data
+// ============================
+// SEED DATA
+// ============================
+
 function seedData() {
   if (polls.length > 0) return;
 
   const now = new Date();
   const tomorrow = new Date(now.getTime() + 24 * 60 * 60 * 1000);
   const in2Hours = new Date(now.getTime() + 2 * 60 * 60 * 1000);
+  const in6Hours = new Date(now.getTime() + 6 * 60 * 60 * 1000);
 
-  // Seed daily question
+  // Daily question
   dailyQuestions.push({
     id: uuidv4(),
-    question: "What's the most important feature for a crypto wallet?",
+    question: "Pineapple on pizza?",
     options: [
-      { id: 'opt1', text: 'Security' },
-      { id: 'opt2', text: 'Ease of use' },
-      { id: 'opt3', text: 'Multi-chain support' },
-      { id: 'opt4', text: 'Low fees' },
+      { id: 'dq-yes', text: 'Yes, always' },
+      { id: 'dq-no', text: 'Absolutely not' },
+      { id: 'dq-sometimes', text: 'Sometimes' },
+      { id: 'dq-never-tried', text: 'Never tried' },
     ],
     active_date: now.toISOString().split('T')[0],
-    created_at: now.toISOString(),
+    created_at: new Date(now.getTime() - 3600000 * 8).toISOString(),
   });
 
-  // Seed polls
+  // Poll 1
   const poll1Id = uuidv4();
   polls.push({
     id: poll1Id,
@@ -86,6 +97,7 @@ function seedData() {
       { id: 'd', text: 'zkSync' },
     ],
     is_anonymous: false,
+    is_prediction: true,
     expires_at: tomorrow.toISOString(),
     is_onchain: false,
     onchain_tx: null,
@@ -93,6 +105,7 @@ function seedData() {
     total_votes: 142,
   });
 
+  // Poll 2 — This or That
   const poll2Id = uuidv4();
   polls.push({
     id: poll2Id,
@@ -106,6 +119,7 @@ function seedData() {
       { id: 'b', text: 'Spaces' },
     ],
     is_anonymous: false,
+    is_prediction: false,
     expires_at: in2Hours.toISOString(),
     is_onchain: false,
     onchain_tx: null,
@@ -113,6 +127,7 @@ function seedData() {
     total_votes: 89,
   });
 
+  // Poll 3 — On-chain, no expiry
   const poll3Id = uuidv4();
   polls.push({
     id: poll3Id,
@@ -128,6 +143,7 @@ function seedData() {
       { id: 'd', text: 'Token gating' },
     ],
     is_anonymous: false,
+    is_prediction: false,
     expires_at: null,
     is_onchain: true,
     onchain_tx: '0xabc123',
@@ -135,6 +151,7 @@ function seedData() {
     total_votes: 256,
   });
 
+  // Poll 4
   const poll4Id = uuidv4();
   polls.push({
     id: poll4Id,
@@ -150,6 +167,7 @@ function seedData() {
       { id: 'd', text: 'Gaming' },
     ],
     is_anonymous: false,
+    is_prediction: false,
     expires_at: new Date(now.getTime() + 48 * 60 * 60 * 1000).toISOString(),
     is_onchain: false,
     onchain_tx: null,
@@ -157,24 +175,74 @@ function seedData() {
     total_votes: 67,
   });
 
-  // Seed votes for poll1
-  const voterNames = ['alice', 'bob', 'charlie', 'dave', 'eve', 'frank'];
-  const options = ['a', 'b', 'c', 'd'];
-  for (let i = 0; i < 42; i++) {
+  // Poll 5 — Anonymous
+  const poll5Id = uuidv4();
+  polls.push({
+    id: poll5Id,
+    creator_fid: 1005,
+    creator_username: 'anon.eth',
+    creator_avatar: null,
+    question: 'How much crypto do you hold?',
+    poll_type: 'standard',
+    options: [
+      { id: 'a', text: 'Under $1K' },
+      { id: 'b', text: '$1K - $10K' },
+      { id: 'c', text: '$10K - $100K' },
+      { id: 'd', text: 'Over $100K' },
+    ],
+    is_anonymous: true,
+    is_prediction: false,
+    expires_at: in6Hours.toISOString(),
+    is_onchain: false,
+    onchain_tx: null,
+    created_at: new Date(now.getTime() - 900000).toISOString(),
+    total_votes: 203,
+  });
+
+  // Poll 6 — Expired
+  const poll6Id = uuidv4();
+  polls.push({
+    id: poll6Id,
+    creator_fid: 1006,
+    creator_username: 'coinbase',
+    creator_avatar: null,
+    question: 'Favorite Base ecosystem dApp?',
+    poll_type: 'standard',
+    options: [
+      { id: 'a', text: 'Uniswap' },
+      { id: 'b', text: 'Aave' },
+      { id: 'c', text: 'friend.tech' },
+      { id: 'd', text: 'Zora' },
+    ],
+    is_anonymous: false,
+    is_prediction: false,
+    expires_at: new Date(now.getTime() - 3600000).toISOString(),
+    is_onchain: false,
+    onchain_tx: null,
+    created_at: new Date(now.getTime() - 86400000 * 2).toISOString(),
+    total_votes: 412,
+  });
+
+  // Seed votes for all polls
+  const voterPool = ['alice', 'bob', 'charlie', 'dave', 'eve', 'frank', 'grace', 'henry', 'ivy', 'jack'];
+  const optionKeys = ['a', 'b', 'c', 'd'];
+
+  // Poll 1 votes (142)
+  for (let i = 0; i < 142; i++) {
     votes.push({
       id: uuidv4(),
       poll_id: poll1Id,
       voter_fid: 2000 + i,
-      voter_username: voterNames[i % voterNames.length] + (i > 5 ? i : ''),
+      voter_username: voterPool[i % voterPool.length] + (i > 9 ? i : ''),
       voter_avatar: null,
-      option_id: i < 20 ? 'a' : options[i % options.length],
-      prediction: null,
-      reaction: i % 5 === 0 ? 'Great question! 🔥' : null,
+      option_id: i < 70 ? 'a' : optionKeys[i % optionKeys.length],
+      prediction: i < 20 ? 'a' : null,
+      reaction: i % 12 === 0 ? 'Based! 🔵' : null,
       created_at: new Date(now.getTime() - Math.random() * 3600000).toISOString(),
     });
   }
-  
-  // Seed votes for poll2
+
+  // Poll 2 votes (89)
   for (let i = 0; i < 89; i++) {
     votes.push({
       id: uuidv4(),
@@ -184,34 +252,110 @@ function seedData() {
       voter_avatar: null,
       option_id: i < 52 ? 'a' : 'b',
       prediction: null,
-      reaction: null,
+      reaction: i === 0 ? 'Tabs forever! ⌨️' : null,
       created_at: new Date(now.getTime() - Math.random() * 7200000).toISOString(),
     });
   }
 
-  // Seed votes for poll3
-  for (let i = 0; i < 100; i++) {
+  // Poll 3 votes (256)
+  for (let i = 0; i < 256; i++) {
     votes.push({
       id: uuidv4(),
       poll_id: poll3Id,
       voter_fid: 4000 + i,
       voter_username: `builder${i}`,
       voter_avatar: null,
-      option_id: i < 60 ? 'a' : options[i % options.length],
+      option_id: i < 140 ? 'a' : optionKeys[i % optionKeys.length],
       prediction: null,
-      reaction: i % 10 === 0 ? 'Mini Apps FTW! 🚀' : null,
+      reaction: i % 15 === 0 ? 'Mini Apps FTW! 🚀' : null,
       created_at: new Date(now.getTime() - Math.random() * 86400000).toISOString(),
+    });
+  }
+
+  // Poll 4 votes (67)
+  for (let i = 0; i < 67; i++) {
+    votes.push({
+      id: uuidv4(),
+      poll_id: poll4Id,
+      voter_fid: 5000 + i,
+      voter_username: `dev${i}`,
+      voter_avatar: null,
+      option_id: optionKeys[i % optionKeys.length],
+      prediction: null,
+      reaction: null,
+      created_at: new Date(now.getTime() - Math.random() * 1800000).toISOString(),
+    });
+  }
+
+  // Poll 5 votes (203) — anonymous
+  for (let i = 0; i < 203; i++) {
+    votes.push({
+      id: uuidv4(),
+      poll_id: poll5Id,
+      voter_fid: 6000 + i,
+      voter_username: `user${i}`,
+      voter_avatar: null,
+      option_id: optionKeys[i % optionKeys.length],
+      prediction: null,
+      reaction: i % 20 === 0 ? 'Interesting results...' : null,
+      created_at: new Date(now.getTime() - Math.random() * 900000).toISOString(),
+    });
+  }
+
+  // Poll 6 votes (412) — expired
+  for (let i = 0; i < 412; i++) {
+    votes.push({
+      id: uuidv4(),
+      poll_id: poll6Id,
+      voter_fid: 7000 + i,
+      voter_username: `fan${i}`,
+      voter_avatar: null,
+      option_id: i < 180 ? 'a' : optionKeys[i % optionKeys.length],
+      prediction: null,
+      reaction: null,
+      created_at: new Date(now.getTime() - 86400000 - Math.random() * 86400000).toISOString(),
+    });
+  }
+
+  // Daily question votes
+  for (let i = 0; i < 340; i++) {
+    votes.push({
+      id: uuidv4(),
+      poll_id: dailyQuestions[0].id,
+      voter_fid: 8000 + i,
+      voter_username: `user${i}`,
+      voter_avatar: null,
+      option_id: ['dq-yes', 'dq-no', 'dq-sometimes', 'dq-never-tried'][i % 4],
+      prediction: null,
+      reaction: null,
+      created_at: new Date(now.getTime() - Math.random() * 3600000 * 8).toISOString(),
     });
   }
 }
 
 seedData();
 
-// Database functions
-export function getPolls(): Poll[] {
-  return [...polls].sort((a, b) => 
-    new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
-  );
+// ============================
+// QUERY FUNCTIONS
+// ============================
+
+/** Get paginated polls by cursor (timestamp string). Returns polls created before cursor. */
+export function getPolls(options?: {
+  cursor?: string;
+  limit?: number;
+  fid?: number;
+}): { polls: Poll[]; nextCursor: string | null } {
+  const limit = options?.limit || 10;
+  const cursorDate = options?.cursor ? new Date(options.cursor).getTime() : Infinity;
+
+  const sorted = [...polls]
+    .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
+    .filter(p => new Date(p.created_at).getTime() < cursorDate);
+
+  const page = sorted.slice(0, limit);
+  const nextCursor = page.length === limit ? page[page.length - 1].created_at : null;
+
+  return { polls: page, nextCursor };
 }
 
 export function getPollById(id: string): Poll | undefined {
@@ -226,6 +370,7 @@ export function createPoll(data: {
   poll_type?: string;
   options: PollOption[];
   is_anonymous?: boolean;
+  is_prediction?: boolean;
   expires_at?: string | null;
   is_onchain?: boolean;
 }): Poll {
@@ -238,6 +383,7 @@ export function createPoll(data: {
     poll_type: (data.poll_type as Poll['poll_type']) || 'standard',
     options: data.options,
     is_anonymous: data.is_anonymous || false,
+    is_prediction: data.is_prediction || false,
     expires_at: data.expires_at || null,
     is_onchain: data.is_onchain || false,
     onchain_tx: null,
@@ -274,7 +420,6 @@ export function createVote(data: {
   prediction?: string | null;
   reaction?: string | null;
 }): Vote | null {
-  // Check if already voted
   if (hasUserVoted(data.poll_id, data.voter_fid)) return null;
 
   const vote: Vote = {
@@ -290,16 +435,35 @@ export function createVote(data: {
   };
   votes.push(vote);
 
-  // Update poll total
   const poll = polls.find(p => p.id === data.poll_id);
   if (poll) poll.total_votes += 1;
 
   return vote;
 }
 
+/** Add a reaction to an existing vote */
+export function addReaction(pollId: string, voterFid: number, reaction: string): boolean {
+  const vote = votes.find(v => v.poll_id === pollId && v.voter_fid === voterFid);
+  if (!vote) return false;
+  vote.reaction = reaction;
+  return true;
+}
+
 export function getDailyQuestion(): DailyQuestion | undefined {
   const today = new Date().toISOString().split('T')[0];
   return dailyQuestions.find(q => q.active_date === today);
+}
+
+export function getDailyQuestionWithVotes(): {
+  question: DailyQuestion;
+  voteCounts: Record<string, number>;
+  totalVotes: number;
+} | null {
+  const dq = getDailyQuestion();
+  if (!dq) return null;
+  const vc = getVoteCountsByOption(dq.id);
+  const total = Object.values(vc).reduce((a, b) => a + b, 0);
+  return { question: dq, voteCounts: vc, totalVotes: total };
 }
 
 export function getTrendingPolls(limit = 5): Poll[] {
@@ -316,12 +480,56 @@ export function getVotesByUser(fid: number): Vote[] {
   return votes.filter(v => v.voter_fid === fid);
 }
 
-export function getReactionsForPoll(pollId: string): { username: string; reaction: string; avatar: string | null }[] {
+export function getReactionsForPoll(pollId: string): { fid: number; username: string; reaction: string; avatar: string | null }[] {
   return votes
     .filter(v => v.poll_id === pollId && v.reaction)
     .map(v => ({
+      fid: v.voter_fid,
       username: v.voter_username,
       reaction: v.reaction!,
       avatar: v.voter_avatar,
     }));
+}
+
+export function getRecentVoters(pollId: string, limit = 5): { fid: number; username: string; avatar: string | null }[] {
+  return votes
+    .filter(v => v.poll_id === pollId)
+    .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
+    .slice(0, limit)
+    .map(v => ({ fid: v.voter_fid, username: v.voter_username, avatar: v.voter_avatar }));
+}
+
+/** Get majority option ID for prediction checking */
+export function getMajorityOptionId(pollId: string): string | null {
+  const counts = getVoteCountsByOption(pollId);
+  let maxCount = 0;
+  let majorityId: string | null = null;
+  for (const [id, count] of Object.entries(counts)) {
+    if (count > maxCount) {
+      maxCount = count;
+      majorityId = id;
+    }
+  }
+  return majorityId;
+}
+
+/** Build enriched poll data for API responses */
+export function enrichPoll(poll: Poll, userFid?: number) {
+  const voteCounts = getVoteCountsByOption(poll.id);
+  const userVote = userFid ? hasUserVoted(poll.id, userFid) : undefined;
+  const recentVoters = poll.is_anonymous ? [] : getRecentVoters(poll.id, 5);
+  const reactions = getReactionsForPoll(poll.id).slice(0, 5);
+  const majorityOptionId = getMajorityOptionId(poll.id);
+
+  return {
+    ...poll,
+    voteCounts,
+    userVotedOptionId: userVote?.option_id || null,
+    userPrediction: userVote?.prediction || null,
+    userReaction: userVote?.reaction || null,
+    predictionCorrect: userVote?.prediction ? userVote.prediction === majorityOptionId : null,
+    majorityOptionId,
+    recentVoters,
+    reactions,
+  };
 }

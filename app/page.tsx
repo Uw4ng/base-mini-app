@@ -1,61 +1,228 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import DailyQuestion from './components/feed/DailyQuestion';
 import TrendingPolls from './components/feed/TrendingPolls';
-import PollFeed from './components/feed/PollFeed';
+import PollCard from './components/poll/PollCard';
 import CreatePoll from './components/poll/CreatePoll';
 import BottomSheet from './components/ui/BottomSheet';
 import UserStats from './components/profile/UserStats';
 import PollHistory from './components/profile/PollHistory';
-import type { Poll, DailyQuestion as DQType } from '@/lib/db';
+import type { Poll } from '@/lib/db';
 
 type TabType = 'feed' | 'profile';
+
+interface EnrichedPoll extends Poll {
+  voteCounts?: Record<string, number>;
+  userVotedOptionId?: string | null;
+  userPrediction?: string | null;
+  predictionCorrect?: boolean | null;
+  majorityOptionId?: string | null;
+  recentVoters?: { fid: number; username: string; avatar: string | null }[];
+  reactions?: { fid: number; username: string; reaction: string; avatar: string | null }[];
+}
+
+interface DailyQuestionData {
+  question: {
+    id: string;
+    question: string;
+    options: { id: string; text: string }[];
+    active_date: string;
+  };
+  voteCounts: Record<string, number>;
+  totalVotes: number;
+  userVotedOptionId: string | null;
+}
+
+const USER_FID = 9999;
 
 export default function Home() {
   const [showCreate, setShowCreate] = useState(false);
   const [activeTab, setActiveTab] = useState<TabType>('feed');
-  const [polls, setPolls] = useState<(Poll & { voteCounts?: Record<string, number> })[]>([]);
-  const [trendingPolls, setTrendingPolls] = useState<Poll[]>([]);
-  const [dailyQuestion, setDailyQuestion] = useState<DQType | null>(null);
+  const [polls, setPolls] = useState<EnrichedPoll[]>([]);
+  const [trendingPolls, setTrendingPolls] = useState<EnrichedPoll[]>([]);
+  const [dailyQuestion, setDailyQuestion] = useState<DailyQuestionData | null>(null);
   const [loading, setLoading] = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const [nextCursor, setNextCursor] = useState<string | null>(null);
+  const [refreshing, setRefreshing] = useState(false);
+  const observerRef = useRef<IntersectionObserver | null>(null);
+  const sentinelRef = useRef<HTMLDivElement | null>(null);
+  const pollIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
-  const fetchData = useCallback(async () => {
+  // ==========================
+  // DATA FETCHING
+  // ==========================
+
+  const fetchFeed = useCallback(async (cursor?: string) => {
+    const url = cursor
+      ? `/api/polls?fid=${USER_FID}&limit=10&cursor=${encodeURIComponent(cursor)}`
+      : `/api/polls?fid=${USER_FID}&limit=10`;
+
+    const res = await fetch(url);
+    const data = await res.json();
+    return { polls: data.polls || [], nextCursor: data.nextCursor };
+  }, []);
+
+  const fetchAll = useCallback(async () => {
     try {
-      const [pollsRes, trendingRes] = await Promise.all([
-        fetch('/api/polls'),
-        fetch('/api/polls?trending=true'),
+      const [feedData, trendingRes, dailyRes] = await Promise.all([
+        fetchFeed(),
+        fetch(`/api/polls?trending=true&fid=${USER_FID}&limit=5`).then(r => r.json()),
+        fetch(`/api/daily?fid=${USER_FID}`).then(r => r.json()),
       ]);
-      const pollsData = await pollsRes.json();
-      const trendingData = await trendingRes.json();
 
-      setPolls(pollsData.polls || []);
-      setTrendingPolls(trendingData.polls || []);
-
-      if (pollsData.polls?.length > 0) {
-        setDailyQuestion({
-          id: 'dq-1',
-          question: "What's the most important feature for a crypto wallet?",
-          options: [
-            { id: 'opt1', text: 'Security' },
-            { id: 'opt2', text: 'Ease of use' },
-            { id: 'opt3', text: 'Multi-chain support' },
-            { id: 'opt4', text: 'Low fees' },
-          ],
-          active_date: new Date().toISOString().split('T')[0],
-          created_at: new Date().toISOString(),
-        });
-      }
+      setPolls(feedData.polls);
+      setNextCursor(feedData.nextCursor);
+      setTrendingPolls(trendingRes.polls || []);
+      if (dailyRes.question) setDailyQuestion(dailyRes);
     } catch (error) {
       console.error('Failed to fetch data:', error);
     } finally {
       setLoading(false);
+      setRefreshing(false);
     }
-  }, []);
+  }, [fetchFeed]);
 
   useEffect(() => {
-    fetchData();
-  }, [fetchData]);
+    fetchAll();
+  }, [fetchAll]);
+
+  // ==========================
+  // INFINITE SCROLL
+  // ==========================
+
+  const loadMore = useCallback(async () => {
+    if (!nextCursor || loadingMore) return;
+    setLoadingMore(true);
+    try {
+      const data = await fetchFeed(nextCursor);
+      setPolls(prev => [...prev, ...data.polls]);
+      setNextCursor(data.nextCursor);
+    } catch (error) {
+      console.error('Failed to load more:', error);
+    } finally {
+      setLoadingMore(false);
+    }
+  }, [nextCursor, loadingMore, fetchFeed]);
+
+  useEffect(() => {
+    if (!sentinelRef.current) return;
+    observerRef.current = new IntersectionObserver(
+      entries => {
+        if (entries[0]?.isIntersecting && nextCursor && !loadingMore) {
+          loadMore();
+        }
+      },
+      { threshold: 0.1 }
+    );
+    observerRef.current.observe(sentinelRef.current);
+    return () => observerRef.current?.disconnect();
+  }, [nextCursor, loadingMore, loadMore]);
+
+  // ==========================
+  // REAL-TIME POLLING (15s)
+  // ==========================
+
+  useEffect(() => {
+    if (activeTab !== 'feed') return;
+
+    pollIntervalRef.current = setInterval(async () => {
+      try {
+        const res = await fetch(`/api/polls?fid=${USER_FID}&limit=${polls.length || 10}`);
+        const data = await res.json();
+        if (data.polls) {
+          setPolls(prev => {
+            const updated = [...prev];
+            for (const newP of data.polls) {
+              const idx = updated.findIndex(p => p.id === newP.id);
+              if (idx >= 0) {
+                // Preserve user's local vote state
+                if (updated[idx].userVotedOptionId) {
+                  newP.userVotedOptionId = updated[idx].userVotedOptionId;
+                }
+                updated[idx] = { ...updated[idx], ...newP, total_votes: newP.total_votes, voteCounts: newP.voteCounts };
+              }
+            }
+            return updated;
+          });
+        }
+      } catch {
+        // Silently fail
+      }
+    }, 15000);
+
+    return () => {
+      if (pollIntervalRef.current) clearInterval(pollIntervalRef.current);
+    };
+  }, [activeTab, polls.length]);
+
+  // ==========================
+  // PULL TO REFRESH
+  // ==========================
+
+  const handleRefresh = useCallback(async () => {
+    setRefreshing(true);
+    await fetchAll();
+  }, [fetchAll]);
+
+  // ==========================
+  // ACTIONS
+  // ==========================
+
+  const handleVote = async (pollId: string, optionId: string, prediction?: string) => {
+    try {
+      const res = await fetch('/api/votes', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          pollId,
+          optionId,
+          voterFid: USER_FID,
+          voterUsername: 'quickpoll.dev',
+          prediction: prediction || null,
+        }),
+      });
+      const data = await res.json();
+
+      if (data.voteCounts) {
+        setPolls(prev =>
+          prev.map(p =>
+            p.id === pollId
+              ? {
+                ...p,
+                voteCounts: data.voteCounts,
+                total_votes: data.totalVotes,
+                userVotedOptionId: optionId,
+                predictionCorrect: data.predictionCorrect,
+                majorityOptionId: data.majorityOptionId,
+              }
+              : p
+          )
+        );
+      }
+    } catch (error) {
+      console.error('Vote failed:', error);
+    }
+  };
+
+  const handleReaction = async (pollId: string, reaction: string) => {
+    try {
+      await fetch('/api/votes', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          pollId,
+          optionId: 'reaction-only',
+          voterFid: USER_FID,
+          voterUsername: 'quickpoll.dev',
+          reaction,
+        }),
+      });
+    } catch {
+      // Silently fail — reaction is optional
+    }
+  };
 
   const handleCreatePoll = async (pollData: {
     question: string;
@@ -71,18 +238,113 @@ export default function Home() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           ...pollData,
-          creator_fid: 9999,
+          creator_fid: USER_FID,
           creator_username: 'quickpoll.dev',
         }),
       });
       const data = await res.json();
       if (data.poll) {
-        setPolls(prev => [{ ...data.poll, voteCounts: {} }, ...prev]);
+        setPolls(prev => [data.poll, ...prev]);
       }
     } catch (error) {
       console.error('Failed to create poll:', error);
     }
     setShowCreate(false);
+  };
+
+  // ==========================
+  // RENDERING
+  // ==========================
+
+  const renderSkeleton = () => (
+    <div className="flex flex-col" style={{ gap: 'var(--space-6)' }}>
+      {[1, 2, 3].map(i => (
+        <div key={i} className="poll-card">
+          <div className="flex items-center" style={{ gap: 'var(--space-2)', marginBottom: 'var(--space-3)' }}>
+            <div className="skeleton" style={{ width: '32px', height: '32px', borderRadius: '50%' }} />
+            <div className="skeleton" style={{ width: '96px', height: '14px' }} />
+          </div>
+          <div className="skeleton" style={{ width: '75%', height: '18px', marginBottom: 'var(--space-3)' }} />
+          <div className="flex flex-col" style={{ gap: 'var(--space-2)' }}>
+            <div className="skeleton" style={{ height: '48px' }} />
+            <div className="skeleton" style={{ height: '48px' }} />
+            <div className="skeleton" style={{ height: '48px' }} />
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+
+  const renderFeed = () => {
+    if (polls.length === 0 && !loading) {
+      return (
+        <div className="text-center animate-fade-in" style={{ padding: 'var(--space-8) var(--space-4)' }}>
+          <div className="text-5xl" style={{ marginBottom: 'var(--space-4)' }}>📊</div>
+          <h3 className="text-[18px] font-bold" style={{ marginBottom: 'var(--space-2)' }}>No polls yet</h3>
+          <p className="text-metadata" style={{ marginBottom: 'var(--space-4)' }}>Create the first one!</p>
+          <button
+            onClick={() => setShowCreate(true)}
+            className="text-button touch-target"
+            style={{
+              padding: '12px 24px',
+              borderRadius: 'var(--radius-sm)',
+              background: 'var(--accent-blue)',
+              color: 'white',
+              border: 'none',
+            }}
+          >
+            + Create Poll
+          </button>
+        </div>
+      );
+    }
+
+    return (
+      <div className="flex flex-col" style={{ gap: 'var(--space-6)' }}>
+        {polls.map((poll, index) => (
+          <div
+            key={poll.id}
+            className="animate-slide-down"
+            style={{ animationDelay: `${index * 50}ms` }}
+          >
+            <PollCard
+              poll={poll}
+              currentUserFid={USER_FID}
+              onVote={handleVote}
+              onReaction={handleReaction}
+            />
+          </div>
+        ))}
+
+        {/* Infinite scroll sentinel */}
+        <div ref={sentinelRef} style={{ height: '1px' }} />
+
+        {/* Loading more */}
+        {loadingMore && (
+          <div className="flex justify-center" style={{ padding: 'var(--space-4)' }}>
+            <div className="flex items-center" style={{ gap: 'var(--space-2)' }}>
+              <div
+                className="animate-spin rounded-full"
+                style={{
+                  width: '20px',
+                  height: '20px',
+                  border: '2px solid var(--border-default)',
+                  borderTopColor: 'var(--accent-blue)',
+                }}
+              />
+              <span className="text-metadata">Loading more...</span>
+            </div>
+          </div>
+        )}
+
+        {/* No more polls */}
+        {!nextCursor && polls.length > 0 && !loadingMore && (
+          <div className="text-center text-metadata" style={{ padding: 'var(--space-4) 0' }}>
+            You&apos;re all caught up! ✨
+          </div>
+        )}
+      </div>
+    );
   };
 
   return (
@@ -119,41 +381,76 @@ export default function Home() {
             </div>
           </div>
 
-          {/* Tab switcher */}
-          <div
-            className="flex"
-            style={{
-              background: 'var(--bg-tertiary)',
-              borderRadius: 'var(--radius-sm)',
-              padding: '2px',
-            }}
-          >
+          <div className="flex items-center" style={{ gap: 'var(--space-2)' }}>
+            {/* Refresh button */}
             <button
-              onClick={() => setActiveTab('feed')}
-              className="text-[13px] font-medium transition-all touch-target"
+              onClick={handleRefresh}
+              className={`flex items-center justify-center transition-transform touch-target ${refreshing ? 'animate-spin' : ''}`}
               style={{
-                padding: '6px 14px',
-                borderRadius: '6px',
-                background: activeTab === 'feed' ? 'var(--accent-blue)' : 'transparent',
-                color: activeTab === 'feed' ? 'white' : 'var(--text-secondary)',
+                width: '32px',
+                height: '32px',
+                borderRadius: '50%',
+                background: 'transparent',
                 border: 'none',
+                color: 'var(--text-secondary)',
+              }}
+              aria-label="Refresh feed"
+            >
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <polyline points="23 4 23 10 17 10" />
+                <polyline points="1 20 1 14 7 14" />
+                <path d="m3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15" />
+              </svg>
+            </button>
+
+            {/* Tab switcher */}
+            <div
+              className="flex"
+              style={{
+                background: 'var(--bg-tertiary)',
+                borderRadius: 'var(--radius-sm)',
+                padding: '2px',
               }}
             >
-              Feed
-            </button>
-            <button
-              onClick={() => setActiveTab('profile')}
-              className="text-[13px] font-medium transition-all touch-target"
+              <button
+                onClick={() => setActiveTab('feed')}
+                className="text-[13px] font-medium transition-all touch-target"
+                style={{
+                  padding: '6px 14px',
+                  borderRadius: '6px',
+                  background: activeTab === 'feed' ? 'var(--accent-blue)' : 'transparent',
+                  color: activeTab === 'feed' ? 'white' : 'var(--text-secondary)',
+                  border: 'none',
+                }}
+              >
+                Feed
+              </button>
+              <button
+                onClick={() => setActiveTab('profile')}
+                className="text-[13px] font-medium transition-all touch-target"
+                style={{
+                  padding: '6px 14px',
+                  borderRadius: '6px',
+                  background: activeTab === 'profile' ? 'var(--accent-blue)' : 'transparent',
+                  color: activeTab === 'profile' ? 'white' : 'var(--text-secondary)',
+                  border: 'none',
+                }}
+              >
+                Profile
+              </button>
+            </div>
+
+            {/* User avatar */}
+            <div
+              className="rounded-full flex items-center justify-center text-sm font-bold text-white"
               style={{
-                padding: '6px 14px',
-                borderRadius: '6px',
-                background: activeTab === 'profile' ? 'var(--accent-blue)' : 'transparent',
-                color: activeTab === 'profile' ? 'white' : 'var(--text-secondary)',
-                border: 'none',
+                width: '32px',
+                height: '32px',
+                background: 'var(--accent-purple)',
               }}
             >
-              Profile
-            </button>
+              Q
+            </div>
           </div>
         </div>
       </header>
@@ -163,7 +460,7 @@ export default function Home() {
         {activeTab === 'feed' ? (
           <div className="flex flex-col" style={{ gap: 'var(--space-4)' }}>
             {/* Daily Question */}
-            {dailyQuestion && <DailyQuestion question={dailyQuestion} />}
+            {dailyQuestion && <DailyQuestion data={dailyQuestion} />}
 
             {/* Trending */}
             <TrendingPolls polls={trendingPolls} />
@@ -176,37 +473,17 @@ export default function Home() {
             </div>
 
             {/* Feed */}
-            {loading ? (
-              <div className="flex flex-col" style={{ gap: 'var(--space-6)' }}>
-                {[1, 2, 3].map(i => (
-                  <div key={i} className="poll-card">
-                    <div className="flex items-center" style={{ gap: 'var(--space-2)', marginBottom: 'var(--space-3)' }}>
-                      <div className="skeleton" style={{ width: '32px', height: '32px', borderRadius: '50%' }} />
-                      <div className="skeleton" style={{ width: '96px', height: '14px' }} />
-                    </div>
-                    <div className="skeleton" style={{ width: '75%', height: '18px', marginBottom: 'var(--space-3)' }} />
-                    <div className="flex flex-col" style={{ gap: 'var(--space-2)' }}>
-                      <div className="skeleton" style={{ height: '48px' }} />
-                      <div className="skeleton" style={{ height: '48px' }} />
-                    </div>
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <PollFeed initialPolls={polls} />
-            )}
+            {loading ? renderSkeleton() : renderFeed()}
           </div>
         ) : (
           <div className="flex flex-col animate-fade-in" style={{ gap: 'var(--space-4)' }}>
             <UserStats
-              pollsCreated={polls.filter(p => p.creator_fid === 9999).length}
+              pollsCreated={polls.filter(p => p.creator_fid === USER_FID).length}
               votesGiven={12}
               streak={5}
               username="quickpoll.dev"
             />
-            <PollHistory
-              polls={polls.filter(p => p.creator_fid === 9999)}
-            />
+            <PollHistory polls={polls.filter(p => p.creator_fid === USER_FID)} />
           </div>
         )}
       </div>
