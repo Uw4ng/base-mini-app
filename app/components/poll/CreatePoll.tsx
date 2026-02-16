@@ -3,6 +3,7 @@
 import { useState, useRef, useEffect } from 'react';
 import { v4 as uuidv4 } from 'uuid';
 import FriendTagger from '../social/FriendTagger';
+import { useToast } from '@/app/components/ui/ToastProvider';
 
 type PollType = 'standard' | 'image' | 'this_or_that' | 'rating';
 type ExpiresIn = null | '1h' | '6h' | '12h' | '24h' | '48h';
@@ -69,6 +70,7 @@ export default function CreatePoll({ onSubmit, onClose }: CreatePollProps) {
     const [showFriendTagger, setShowFriendTagger] = useState(false);
     const [taggedFriends, setTaggedFriends] = useState<{ fid: number; username: string }[]>([]);
 
+    const { showToast } = useToast();
     const textareaRef = useRef<HTMLTextAreaElement>(null);
 
     // Auto-focus textarea on mount
@@ -161,43 +163,39 @@ export default function CreatePoll({ onSubmit, onClose }: CreatePollProps) {
     // SUBMIT
     // ==================
 
-    const handleSubmit = () => {
+    const handleSubmit = async () => {
         setTouched(true);
         if (!isValid() || isSubmitting) return;
         setIsSubmitting(true);
-
-        let finalOptions: { id: string; text: string; imageUrl?: string }[];
-        let finalType = pollType;
-
-        if (pollType === 'rating') {
-            // Rating: create 5 star options
-            finalOptions = [1, 2, 3, 4, 5].map(n => ({
-                id: uuidv4(),
-                text: `${'★'.repeat(n)}${'☆'.repeat(5 - n)} (${n})`,
-            }));
-            finalType = 'rating';
-        } else {
-            finalOptions = options.filter(o => o.text.trim()).map(o => ({
-                ...o,
-                text: o.text.trim(),
-            }));
+        try {
+            await onSubmit({
+                question: pollType === 'rating'
+                    ? `Rate: ${ratingSubject.trim()}`
+                    : question.trim(),
+                options: pollType === 'rating'
+                    ? [1, 2, 3, 4, 5].map(n => ({
+                        id: uuidv4(),
+                        text: `${'★'.repeat(n)}${'☆'.repeat(5 - n)} (${n})`,
+                    }))
+                    : options.filter(o => o.text.trim() || o.imageUrl).map(o => ({
+                        ...o,
+                        text: o.text.trim(),
+                    })),
+                poll_type: pollType,
+                is_anonymous: isAnonymous,
+                is_prediction: isPrediction,
+                expires_at: getExpiryDate(expiresIn),
+                is_onchain: isOnchain,
+                tagged_fids: taggedFriends.map(f => f.fid),
+                tagged_usernames: taggedFriends.map(f => f.username),
+            });
+            showToast('Poll created successfully!', 'success');
+            onClose?.();
+        } catch (error) {
+            console.error(error);
+            showToast('Failed to create poll. Please try again.', 'error');
+            setIsSubmitting(false);
         }
-
-        onSubmit({
-            question: pollType === 'rating'
-                ? `Rate: ${ratingSubject.trim()}`
-                : question.trim(),
-            options: finalOptions,
-            poll_type: finalType,
-            is_anonymous: isAnonymous,
-            is_prediction: isPrediction,
-            expires_at: getExpiryDate(expiresIn),
-            is_onchain: isOnchain,
-            tagged_fids: taggedFriends.map(f => f.fid),
-            tagged_usernames: taggedFriends.map(f => f.username),
-        });
-
-        setIsSubmitting(false);
     };
 
     // ==================

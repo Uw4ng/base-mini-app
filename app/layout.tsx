@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import "./globals.css";
 import Providers from "./providers";
+import { ToastProvider } from "./components/ui/ToastProvider";
 
 export const metadata: Metadata = {
   title: "Quick Poll — Ask anything. Decide together.",
@@ -20,7 +21,7 @@ export default function RootLayout({
   return (
     <html lang="en" className="dark">
       <head>
-        <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
+        <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover" />
         <meta name="theme-color" content="#0A0A0A" />
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
@@ -28,7 +29,9 @@ export default function RootLayout({
       </head>
       <body className="antialiased">
         <Providers>
-          {children}
+          <ToastProvider>
+            {children}
+          </ToastProvider>
         </Providers>
       </body>
     </html>

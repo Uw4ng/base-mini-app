@@ -10,6 +10,7 @@ import OnchainSaveButton from '@/app/components/onchain/OnchainSaveButton';
 import { BASESCAN_URL } from '@/lib/contractConfig';
 import type { Poll, PollOption } from '@/lib/db';
 import { timeAgo } from '@/lib/farcaster';
+import { useToast } from '@/app/components/ui/ToastProvider';
 
 interface EnrichedPoll extends Poll {
     voteCounts?: Record<string, number>;
@@ -26,7 +27,7 @@ interface EnrichedPoll extends Poll {
 interface PollCardProps {
     poll: EnrichedPoll;
     currentUserFid?: number;
-    onVote?: (pollId: string, optionId: string, prediction?: string) => void;
+    onVote?: (pollId: string, optionId: string, prediction?: string) => Promise<void>;
     onReaction?: (pollId: string, reaction: string) => void;
 }
 
@@ -36,6 +37,7 @@ export default function PollCard({
     onVote,
     onReaction,
 }: PollCardProps) {
+    const { showToast } = useToast();
     const [voted, setVoted] = useState(poll.userVotedOptionId || null);
     const [localCounts, setLocalCounts] = useState(poll.voteCounts || {});
     const [localTotal, setLocalTotal] = useState(poll.total_votes);
@@ -74,29 +76,45 @@ export default function PollCard({
         [hasVoted, isExpired, animating, poll.is_prediction, prediction]
     );
 
-    const executeVote = (optionId: string, pred?: string | null) => {
+    const executeVote = async (optionId: string, pred?: string | null) => {
+        if (animating) return;
         setAnimating(true);
+
+        // Optimistic update
+        const sortedVoted = voted;
+        const prevCounts = { ...localCounts };
+        const prevTotal = localTotal;
+
         setVoted(optionId);
         setLocalCounts(prev => ({
             ...prev,
             [optionId]: (prev[optionId] || 0) + 1,
         }));
         setLocalTotal(prev => prev + 1);
-
         setShowConfetti(true);
-        setTimeout(() => setShowConfetti(false), 400);
 
-        onVote?.(poll.id, optionId, pred || undefined);
-        setTimeout(() => setAnimating(false), 500);
-        setShowPrediction(false);
-        setPendingVoteOption(null);
+        try {
+            await onVote?.(poll.id, optionId, pred || undefined);
+            setTimeout(() => setShowConfetti(false), 400);
+        } catch {
+            // Revert on error
+            setVoted(sortedVoted);
+            setLocalCounts(prevCounts);
+            setLocalTotal(prevTotal);
+            setShowConfetti(false);
+            showToast('Failed to submit vote. Please try again.', 'error');
+        } finally {
+            setAnimating(false);
+            setShowPrediction(false);
+            setPendingVoteOption(null);
+        }
     };
 
     const handlePredictionSelect = (predictedOptionId: string) => {
         setPrediction(predictedOptionId);
         if (pendingVoteOption) {
             executeVote(pendingVoteOption, predictedOptionId);
-            // Simulate prediction result (majority check would come from API)
+            // Simulate prediction result (majority check would come from API in real usage)
             const currentMajority = Object.entries(localCounts).reduce(
                 (max, [id, count]) => count > max[1] ? [id, count] : max,
                 ['', 0] as [string, number]

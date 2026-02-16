@@ -6,6 +6,8 @@ import TrendingPolls from './components/feed/TrendingPolls';
 import PollCard from './components/poll/PollCard';
 import CreatePoll from './components/poll/CreatePoll';
 import BottomSheet from './components/ui/BottomSheet';
+import SkeletonCards from './components/ui/SkeletonCards';
+import { useToast } from './components/ui/ToastProvider';
 import UserStats from './components/profile/UserStats';
 import PollHistory from './components/profile/PollHistory';
 import type { Poll } from '@/lib/db';
@@ -62,15 +64,17 @@ export default function Home() {
   const [loadingMore, setLoadingMore] = useState(false);
   const [nextCursor, setNextCursor] = useState<string | null>(null);
   const [refreshing, setRefreshing] = useState(false);
-  const observerRef = useRef<IntersectionObserver | null>(null);
-  const sentinelRef = useRef<HTMLDivElement | null>(null);
-  const pollIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const observerTarget = useRef<HTMLDivElement>(null);
+  const pollIntervalRef = useRef<NodeJS.Timeout | null>(null);
 
   // Post-creation UX
-  const [toast, setToast] = useState<string | null>(null);
+  // Removed local toast state
+  // const [toast, setToast] = useState<string | null>(null);
   const [showSharePrompt, setShowSharePrompt] = useState(false);
   const [lastCreatedPoll, setLastCreatedPoll] = useState<{ id: string; question: string } | null>(null);
   const [highlightedPollId, setHighlightedPollId] = useState<string | null>(null);
+
+  const { showToast } = useToast();
 
   // ==========================
   // DATA FETCHING
@@ -129,8 +133,7 @@ export default function Home() {
   }, [nextCursor, loadingMore, fetchFeed]);
 
   useEffect(() => {
-    if (!sentinelRef.current) return;
-    observerRef.current = new IntersectionObserver(
+    const observer = new IntersectionObserver(
       entries => {
         if (entries[0]?.isIntersecting && nextCursor && !loadingMore) {
           loadMore();
@@ -138,8 +141,12 @@ export default function Home() {
       },
       { threshold: 0.1 }
     );
-    observerRef.current.observe(sentinelRef.current);
-    return () => observerRef.current?.disconnect();
+
+    if (observerTarget.current) {
+      observer.observe(observerTarget.current);
+    }
+
+    return () => observer.disconnect();
   }, [nextCursor, loadingMore, loadMore]);
 
   // ==========================
@@ -273,9 +280,7 @@ export default function Home() {
         setHighlightedPollId(data.poll.id);
         setTimeout(() => setHighlightedPollId(null), 3000);
 
-        // Show toast
-        setToast('Poll created! Share it with friends?');
-        setTimeout(() => setToast(null), 4000);
+        showToast('Poll created! Share it with friends?', 'success');
 
         // Show share prompt
         setLastCreatedPoll({ id: data.poll.id, question: pollData.question });
@@ -283,8 +288,7 @@ export default function Home() {
       }
     } catch (error) {
       console.error('Failed to create poll:', error);
-      setToast('Failed to create poll');
-      setTimeout(() => setToast(null), 3000);
+      showToast('Failed to create poll', 'error');
     }
     setShowCreate(false);
   };
@@ -302,24 +306,7 @@ export default function Home() {
   // RENDERING
   // ==========================
 
-  const renderSkeleton = () => (
-    <div className="flex flex-col" style={{ gap: 'var(--space-6)' }}>
-      {[1, 2, 3].map(i => (
-        <div key={i} className="poll-card">
-          <div className="flex items-center" style={{ gap: 'var(--space-2)', marginBottom: 'var(--space-3)' }}>
-            <div className="skeleton" style={{ width: '32px', height: '32px', borderRadius: '50%' }} />
-            <div className="skeleton" style={{ width: '96px', height: '14px' }} />
-          </div>
-          <div className="skeleton" style={{ width: '75%', height: '18px', marginBottom: 'var(--space-3)' }} />
-          <div className="flex flex-col" style={{ gap: 'var(--space-2)' }}>
-            <div className="skeleton" style={{ height: '48px' }} />
-            <div className="skeleton" style={{ height: '48px' }} />
-            <div className="skeleton" style={{ height: '48px' }} />
-          </div>
-        </div>
-      ))}
-    </div>
-  );
+  const renderSkeleton = () => <SkeletonCards count={3} />;
 
   const renderFeed = () => {
     if (polls.length === 0 && !loading) {
@@ -370,7 +357,7 @@ export default function Home() {
         ))}
 
         {/* Infinite scroll sentinel */}
-        <div ref={sentinelRef} style={{ height: '1px' }} />
+        <div ref={observerTarget} style={{ height: '1px' }} />
 
         {/* Loading more */}
         {loadingMore && (
@@ -560,27 +547,7 @@ export default function Home() {
         />
       </BottomSheet>
 
-      {/* Toast notification */}
-      {toast && (
-        <div
-          className="fixed left-1/2 bottom-28 z-50 animate-slide-up"
-          style={{
-            transform: 'translateX(-50%)',
-            background: 'var(--bg-secondary)',
-            border: '1px solid var(--border-default)',
-            borderRadius: 'var(--radius-md)',
-            padding: '12px 20px',
-            fontSize: '14px',
-            fontWeight: 500,
-            color: 'var(--text-primary)',
-            boxShadow: '0 8px 32px rgba(0, 0, 0, 0.4)',
-            whiteSpace: 'nowrap',
-            maxWidth: '90%',
-          }}
-        >
-          {toast}
-        </div>
-      )}
+
 
       {/* Farcaster share prompt */}
       {showSharePrompt && lastCreatedPoll && (
