@@ -11,6 +11,7 @@ import { useToast } from './components/ui/ToastProvider';
 import UserStats from './components/profile/UserStats';
 import PollHistory from './components/profile/PollHistory';
 import type { Poll } from '@/lib/db';
+import { useMiniKit } from './context/MiniKitContext';
 
 type TabType = 'feed' | 'profile';
 
@@ -52,9 +53,12 @@ interface DailyQuestionData {
   userVotedOptionId: string | null;
 }
 
-const USER_FID = 9999;
+const GUEST_FID = 9999;
 
 export default function Home() {
+  const { user, isLoaded, addFrame } = useMiniKit();
+  const USER_FID = user?.fid ?? GUEST_FID;
+  const [voteCount, setVoteCount] = useState(0);
   const [showCreate, setShowCreate] = useState(false);
   const [activeTab, setActiveTab] = useState<TabType>('feed');
   const [polls, setPolls] = useState<EnrichedPoll[]>([]);
@@ -81,6 +85,7 @@ export default function Home() {
   // ==========================
 
   const fetchFeed = useCallback(async (cursor?: string) => {
+    // Wait for MiniKit to load user if possible, but for now just use current USER_FID
     const url = cursor
       ? `/api/polls?fid=${USER_FID}&limit=10&cursor=${encodeURIComponent(cursor)}`
       : `/api/polls?fid=${USER_FID}&limit=10`;
@@ -88,7 +93,7 @@ export default function Home() {
     const res = await fetch(url);
     const data = await res.json();
     return { polls: data.polls || [], nextCursor: data.nextCursor };
-  }, []);
+  }, [USER_FID]);
 
   const fetchAll = useCallback(async () => {
     try {
@@ -104,11 +109,10 @@ export default function Home() {
       if (dailyRes.question) setDailyQuestion(dailyRes);
     } catch (error) {
       console.error('Failed to fetch data:', error);
-    } finally {
       setLoading(false);
       setRefreshing(false);
     }
-  }, [fetchFeed]);
+  }, [fetchFeed, USER_FID]);
 
   useEffect(() => {
     fetchAll();
@@ -184,7 +188,7 @@ export default function Home() {
     return () => {
       if (pollIntervalRef.current) clearInterval(pollIntervalRef.current);
     };
-  }, [activeTab, polls.length]);
+  }, [activeTab, polls.length, USER_FID]);
 
   // ==========================
   // PULL TO REFRESH
@@ -229,6 +233,7 @@ export default function Home() {
               : p
           )
         );
+        setVoteCount(prev => prev + 1);
       }
     } catch (error) {
       console.error('Vote failed:', error);
@@ -386,6 +391,20 @@ export default function Home() {
       </div>
     );
   };
+
+  useEffect(() => {
+    if (voteCount === 3) {
+      addFrame();
+    }
+  }, [voteCount, addFrame]);
+
+  if (!isLoaded) {
+    return (
+      <div className="flex h-screen items-center justify-center bg-primary">
+        <div className="animate-spin h-8 w-8 border-4 border-accent-blue border-t-transparent rounded-full" />
+      </div>
+    );
+  }
 
   return (
     <main className="min-h-screen max-w-lg mx-auto relative" style={{ paddingBottom: '96px' }}>

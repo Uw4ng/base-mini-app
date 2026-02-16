@@ -1,30 +1,37 @@
 import { NextRequest, NextResponse } from 'next/server';
 
-export async function POST(request: NextRequest) {
+export async function POST(req: NextRequest) {
     try {
-        const body = await request.json();
-        const { event } = body;
+        const body = await req.json();
 
-        // Handle Farcaster webhook events
-        switch (event) {
+        // Log the event for debugging
+        console.log('Farcaster Webhook:', JSON.stringify(body, null, 2));
+
+        // Handle specific events
+        switch (body.event) {
             case 'frame_added':
-                console.log('[Webhook] Frame added by user');
+                // Handle app installation
+                if (body.notificationDetails) {
+                    console.log(`Frame added by FID ${body.fid}. Token: ${body.notificationDetails.token}`);
+                }
                 break;
+
             case 'frame_removed':
-                console.log('[Webhook] Frame removed by user');
+                console.log(`Frame removed by FID ${body.fid}`);
                 break;
+
             case 'notifications_enabled':
-                console.log('[Webhook] Notifications enabled');
+                console.log(`Notifications enabled for FID ${body.fid}`);
                 break;
+
             case 'notifications_disabled':
-                console.log('[Webhook] Notifications disabled');
+                console.log(`Notifications disabled for FID ${body.fid}`);
                 break;
-            default:
-                console.log(`[Webhook] Unknown event: ${event}`);
         }
 
         return NextResponse.json({ success: true });
-    } catch {
-        return NextResponse.json({ error: 'Invalid webhook payload' }, { status: 400 });
+    } catch (error) {
+        console.error('Webhook error:', error);
+        return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
     }
 }
