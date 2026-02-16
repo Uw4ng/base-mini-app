@@ -9,37 +9,54 @@ interface UserStatsProps {
 
 export default function UserStats({ pollsCreated, votesGiven, streak, username }: UserStatsProps) {
     const stats = [
-        { label: 'Polls', value: pollsCreated, icon: '📊', color: 'from-purple-500 to-violet-600' },
-        { label: 'Votes', value: votesGiven, icon: '🗳️', color: 'from-pink-500 to-rose-600' },
-        { label: 'Streak', value: `${streak}d`, icon: '🔥', color: 'from-amber-500 to-orange-600' },
+        { label: 'Total Votes', value: String(votesGiven), icon: '🗳️' },
+        { label: 'Majority %', value: '72%', icon: '📊' },
+        { label: 'Polls Created', value: String(pollsCreated), icon: '✏️' },
     ];
 
     return (
-        <div className="glass rounded-2xl p-4 animate-fade-in">
+        <div
+            className="animate-fade-in"
+            style={{
+                background: 'var(--bg-secondary)',
+                border: '1px solid var(--border-subtle)',
+                borderRadius: 'var(--radius-md)',
+                padding: 'var(--space-5)',
+            }}
+        >
             {/* User info */}
-            <div className="flex items-center gap-3 mb-4">
-                <div className="w-12 h-12 rounded-full flex items-center justify-center text-lg font-bold"
-                    style={{ background: 'var(--accent-gradient)' }}
+            <div className="flex items-center" style={{ gap: 'var(--space-3)', marginBottom: 'var(--space-4)' }}>
+                <div
+                    className="rounded-full flex items-center justify-center text-lg font-bold text-white"
+                    style={{
+                        width: '44px',
+                        height: '44px',
+                        background: 'var(--accent-blue)',
+                    }}
                 >
                     {username.charAt(0).toUpperCase()}
                 </div>
                 <div>
-                    <div className="font-bold text-sm">@{username}</div>
-                    <div className="text-xs text-muted">Quick Poll Member</div>
+                    <div className="text-[15px] font-bold">@{username}</div>
+                    <div className="text-metadata">Quick Poll Member • 🔥 {streak} day streak</div>
                 </div>
             </div>
 
-            {/* Stats grid */}
-            <div className="grid grid-cols-3 gap-2">
+            {/* Stats grid — 3 columns */}
+            <div className="grid grid-cols-3" style={{ gap: 'var(--space-2)' }}>
                 {stats.map(stat => (
                     <div
                         key={stat.label}
-                        className={`rounded-xl p-3 text-center bg-gradient-to-br ${stat.color} bg-opacity-10`}
-                        style={{ background: `linear-gradient(135deg, rgba(255,255,255,0.03), rgba(255,255,255,0.01))` }}
+                        className="text-center"
+                        style={{
+                            padding: 'var(--space-3)',
+                            borderRadius: 'var(--radius-sm)',
+                            background: 'var(--bg-tertiary)',
+                            border: '1px solid var(--border-subtle)',
+                        }}
                     >
-                        <div className="text-lg mb-0.5">{stat.icon}</div>
-                        <div className="text-lg font-black">{stat.value}</div>
-                        <div className="text-[10px] text-muted">{stat.label}</div>
+                        <div className="text-stat-number animate-count-up">{stat.value}</div>
+                        <div className="text-stat-label" style={{ marginTop: 'var(--space-1)' }}>{stat.label}</div>
                     </div>
                 ))}
             </div>

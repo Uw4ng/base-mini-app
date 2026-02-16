@@ -26,7 +26,7 @@ export default function CreatePoll({ onSubmit, onClose }: CreatePollProps) {
     const [isSubmitting, setIsSubmitting] = useState(false);
 
     const addOption = () => {
-        if (options.length < 6) setOptions([...options, '']);
+        if (options.length < 4) setOptions([...options, '']);
     };
 
     const removeOption = (index: number) => {
@@ -72,62 +72,89 @@ export default function CreatePoll({ onSubmit, onClose }: CreatePollProps) {
     };
 
     const pollTypes = [
-        { id: 'standard', label: 'Standard', icon: '📊', desc: 'Multiple choice' },
-        { id: 'this_or_that', label: 'This or That', icon: '⚡', desc: 'Binary choice' },
-        { id: 'rating', label: 'Rating', icon: '⭐', desc: 'Scale 1-5' },
+        { id: 'standard', label: 'Standard', icon: '📊' },
+        { id: 'image', label: 'Image', icon: '🖼️' },
+        { id: 'this_or_that', label: 'This or That', icon: '⚡' },
+        { id: 'rating', label: 'Rating', icon: '⭐' },
     ];
 
     const expiryOptions = [
-        { value: 1, label: '1 hour' },
-        { value: 6, label: '6 hours' },
-        { value: 24, label: '24 hours' },
-        { value: 72, label: '3 days' },
-        { value: null, label: 'No limit' },
+        { value: 1, label: '1h' },
+        { value: 6, label: '6h' },
+        { value: 24, label: '24h' },
+        { value: 72, label: '3d' },
+        { value: null, label: '∞' },
     ];
 
     return (
-        <div className="space-y-5">
+        <div className="flex flex-col" style={{ gap: 'var(--space-5)' }}>
             {/* Step indicator */}
-            <div className="flex items-center gap-2 mb-4">
+            <div className="flex items-center justify-center" style={{ gap: 'var(--space-2)' }}>
                 {[1, 2, 3].map(s => (
-                    <div key={s} className="flex items-center gap-2">
+                    <div key={s} className="flex items-center" style={{ gap: 'var(--space-2)' }}>
                         <div
-                            className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold transition-all ${s === step
-                                    ? 'bg-accent text-white scale-110'
-                                    : s < step
-                                        ? 'bg-success/20 text-success'
-                                        : 'bg-foreground/5 text-muted'
-                                }`}
+                            className="flex items-center justify-center rounded-full text-[13px] font-semibold transition-all"
+                            style={{
+                                width: '28px',
+                                height: '28px',
+                                background: s === step ? 'var(--accent-blue)' : s < step ? 'var(--accent-green)' : 'var(--bg-tertiary)',
+                                color: s <= step ? 'white' : 'var(--text-tertiary)',
+                            }}
                         >
                             {s < step ? '✓' : s}
                         </div>
                         {s < 3 && (
-                            <div className={`w-8 h-0.5 ${s < step ? 'bg-success/40' : 'bg-foreground/10'}`} />
+                            <div
+                                style={{
+                                    width: '24px',
+                                    height: '2px',
+                                    background: s < step ? 'var(--accent-green)' : 'var(--border-subtle)',
+                                }}
+                            />
                         )}
                     </div>
                 ))}
             </div>
 
-            {/* Step 1: Question */}
+            {/* Step 1: Question + Type */}
             {step === 1 && (
-                <div className="animate-fade-in space-y-4">
+                <div className="animate-fade-in flex flex-col" style={{ gap: 'var(--space-4)' }}>
                     <div>
-                        <label className="text-sm font-medium text-muted mb-2 block">Your question</label>
+                        <label className="text-metadata block" style={{ marginBottom: 'var(--space-2)' }}>Your question</label>
                         <textarea
                             value={question}
                             onChange={e => setQuestion(e.target.value)}
-                            placeholder="What do you want to ask?"
-                            className="w-full bg-foreground/5 border border-border rounded-xl px-4 py-3 text-foreground placeholder:text-muted/50 focus:outline-none focus:border-accent focus:ring-1 focus:ring-accent/30 resize-none text-base"
+                            placeholder="Ask anything..."
+                            className="w-full text-[18px] font-medium focus:outline-none resize-none placeholder:text-tertiary"
+                            style={{
+                                background: 'var(--bg-tertiary)',
+                                border: '1px solid var(--border-subtle)',
+                                borderRadius: 'var(--radius-md)',
+                                padding: 'var(--space-4)',
+                                color: 'var(--text-primary)',
+                                minHeight: '96px',
+                            }}
                             rows={3}
                             maxLength={280}
                             autoFocus
+                            onFocus={(e) => {
+                                const el = e.target as HTMLTextAreaElement;
+                                el.style.borderColor = 'var(--border-focus)';
+                            }}
+                            onBlur={(e) => {
+                                const el = e.target as HTMLTextAreaElement;
+                                el.style.borderColor = 'var(--border-subtle)';
+                            }}
                         />
-                        <div className="text-right text-xs text-muted mt-1">{question.length}/280</div>
+                        <div className="text-right text-metadata" style={{ marginTop: 'var(--space-1)' }}>
+                            {question.length}/280
+                        </div>
                     </div>
 
+                    {/* Poll type — horizontal pill tabs */}
                     <div>
-                        <label className="text-sm font-medium text-muted mb-2 block">Poll type</label>
-                        <div className="grid grid-cols-3 gap-2">
+                        <label className="text-metadata block" style={{ marginBottom: 'var(--space-2)' }}>Poll type</label>
+                        <div className="flex" style={{ gap: 'var(--space-2)' }}>
                             {pollTypes.map(type => (
                                 <button
                                     key={type.id}
@@ -135,13 +162,20 @@ export default function CreatePoll({ onSubmit, onClose }: CreatePollProps) {
                                         setPollType(type.id);
                                         if (type.id === 'this_or_that') setOptions(['', '']);
                                     }}
-                                    className={`p-3 rounded-xl border text-center transition-all ${pollType === type.id
-                                            ? 'border-accent bg-accent/10 scale-[1.02]'
-                                            : 'border-border bg-foreground/5 hover:border-foreground/20'
-                                        }`}
+                                    className="flex items-center touch-target transition-all"
+                                    style={{
+                                        padding: '8px 12px',
+                                        borderRadius: 'var(--radius-full)',
+                                        gap: 'var(--space-1)',
+                                        background: pollType === type.id ? 'var(--accent-blue)' : 'var(--bg-tertiary)',
+                                        color: pollType === type.id ? 'white' : 'var(--text-secondary)',
+                                        fontSize: '13px',
+                                        fontWeight: 500,
+                                        border: 'none',
+                                    }}
                                 >
-                                    <div className="text-xl mb-1">{type.icon}</div>
-                                    <div className="text-xs font-medium">{type.label}</div>
+                                    <span>{type.icon}</span>
+                                    <span>{type.label}</span>
                                 </button>
                             ))}
                         </div>
@@ -151,34 +185,54 @@ export default function CreatePoll({ onSubmit, onClose }: CreatePollProps) {
 
             {/* Step 2: Options */}
             {step === 2 && (
-                <div className="animate-fade-in space-y-3">
-                    <label className="text-sm font-medium text-muted mb-2 block">Answer options</label>
+                <div className="animate-fade-in flex flex-col" style={{ gap: 'var(--space-3)' }}>
+                    <label className="text-metadata">Answer options</label>
                     {options.map((option, i) => (
-                        <div key={i} className="flex gap-2 items-center">
-                            <div className="w-6 h-6 rounded-full bg-accent/20 text-accent flex items-center justify-center text-xs font-bold flex-shrink-0">
-                                {String.fromCharCode(65 + i)}
-                            </div>
+                        <div key={i} className="flex items-center" style={{ gap: 'var(--space-2)' }}>
                             <input
                                 value={option}
                                 onChange={e => updateOption(i, e.target.value)}
-                                placeholder={`Option ${i + 1}`}
-                                className="flex-1 bg-foreground/5 border border-border rounded-xl px-4 py-2.5 text-foreground placeholder:text-muted/50 focus:outline-none focus:border-accent focus:ring-1 focus:ring-accent/30 text-sm"
+                                placeholder={`Option ${String.fromCharCode(65 + i)}`}
+                                className="flex-1 text-option focus:outline-none"
+                                style={{
+                                    background: 'var(--bg-tertiary)',
+                                    border: '1px solid var(--border-subtle)',
+                                    borderRadius: 'var(--radius-sm)',
+                                    padding: '12px 16px',
+                                    color: 'var(--text-primary)',
+                                    minHeight: '48px',
+                                }}
+                                onFocus={(e) => { e.currentTarget.style.borderColor = 'var(--border-focus)'; }}
+                                onBlur={(e) => { e.currentTarget.style.borderColor = 'var(--border-subtle)'; }}
                                 maxLength={100}
                             />
                             {options.length > 2 && (
                                 <button
                                     onClick={() => removeOption(i)}
-                                    className="w-8 h-8 rounded-full bg-danger/10 text-danger flex items-center justify-center hover:bg-danger/20 transition-colors flex-shrink-0"
+                                    className="touch-target flex items-center justify-center rounded-full transition-colors"
+                                    style={{
+                                        width: '36px', height: '36px',
+                                        background: 'rgba(239, 68, 68, 0.1)',
+                                        color: 'var(--accent-red)',
+                                    }}
+                                    aria-label={`Remove option ${String.fromCharCode(65 + i)}`}
                                 >
                                     ×
                                 </button>
                             )}
                         </div>
                     ))}
-                    {options.length < 6 && pollType !== 'this_or_that' && (
+                    {options.length < 4 && pollType !== 'this_or_that' && (
                         <button
                             onClick={addOption}
-                            className="w-full py-2.5 rounded-xl border border-dashed border-border text-muted text-sm hover:border-accent hover:text-accent transition-colors"
+                            className="text-metadata w-full transition-colors touch-target"
+                            style={{
+                                border: '1px dashed var(--border-default)',
+                                borderRadius: 'var(--radius-sm)',
+                                padding: '12px',
+                                background: 'transparent',
+                                color: 'var(--text-secondary)',
+                            }}
                         >
                             + Add option
                         </button>
@@ -188,19 +242,25 @@ export default function CreatePoll({ onSubmit, onClose }: CreatePollProps) {
 
             {/* Step 3: Settings */}
             {step === 3 && (
-                <div className="animate-fade-in space-y-4">
-                    {/* Duration */}
+                <div className="animate-fade-in flex flex-col" style={{ gap: 'var(--space-4)' }}>
+                    {/* Timer selector */}
                     <div>
-                        <label className="text-sm font-medium text-muted mb-2 block">Duration</label>
-                        <div className="flex flex-wrap gap-2">
+                        <label className="text-metadata block" style={{ marginBottom: 'var(--space-2)' }}>Duration</label>
+                        <div className="flex" style={{ gap: 'var(--space-2)' }}>
                             {expiryOptions.map(opt => (
                                 <button
                                     key={String(opt.value)}
                                     onClick={() => setExpiryHours(opt.value)}
-                                    className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${expiryHours === opt.value
-                                            ? 'bg-accent text-white'
-                                            : 'bg-foreground/5 text-muted hover:bg-foreground/10'
-                                        }`}
+                                    className="transition-all touch-target"
+                                    style={{
+                                        padding: '8px 14px',
+                                        borderRadius: 'var(--radius-full)',
+                                        fontSize: '13px',
+                                        fontWeight: 600,
+                                        background: expiryHours === opt.value ? 'var(--accent-blue)' : 'var(--bg-tertiary)',
+                                        color: expiryHours === opt.value ? 'white' : 'var(--text-secondary)',
+                                        border: 'none',
+                                    }}
                                 >
                                     {opt.label}
                                 </button>
@@ -208,51 +268,90 @@ export default function CreatePoll({ onSubmit, onClose }: CreatePollProps) {
                         </div>
                     </div>
 
-                    {/* Toggles */}
-                    <div className="space-y-3">
-                        <label className="flex items-center justify-between cursor-pointer group">
-                            <div>
-                                <span className="text-sm font-medium">Anonymous voting</span>
-                                <p className="text-xs text-muted">Hide voter identities</p>
+                    {/* Toggle row */}
+                    <div className="flex flex-col" style={{ gap: 'var(--space-3)' }}>
+                        {/* Anonymous */}
+                        <button
+                            onClick={() => setIsAnonymous(!isAnonymous)}
+                            className="flex items-center justify-between touch-target w-full"
+                            style={{
+                                padding: 'var(--space-3) var(--space-4)',
+                                borderRadius: 'var(--radius-sm)',
+                                background: 'var(--bg-tertiary)',
+                                border: 'none',
+                            }}
+                        >
+                            <div className="text-left">
+                                <div className="text-[14px] font-medium" style={{ color: 'var(--text-primary)' }}>Anonymous</div>
+                                <div className="text-[12px]" style={{ color: 'var(--text-secondary)' }}>Hide voter identities</div>
                             </div>
                             <div
-                                onClick={() => setIsAnonymous(!isAnonymous)}
-                                className={`w-11 h-6 rounded-full relative transition-colors ${isAnonymous ? 'bg-accent' : 'bg-foreground/10'
-                                    }`}
+                                className="relative rounded-full transition-colors"
+                                style={{
+                                    width: '44px', height: '24px',
+                                    background: isAnonymous ? 'var(--accent-blue)' : 'var(--bg-hover)',
+                                }}
                             >
                                 <div
-                                    className={`w-5 h-5 rounded-full bg-white shadow absolute top-0.5 transition-transform ${isAnonymous ? 'translate-x-5' : 'translate-x-0.5'
-                                        }`}
+                                    className="absolute rounded-full bg-white shadow transition-transform"
+                                    style={{
+                                        width: '20px', height: '20px',
+                                        top: '2px',
+                                        transform: isAnonymous ? 'translateX(22px)' : 'translateX(2px)',
+                                    }}
                                 />
                             </div>
-                        </label>
+                        </button>
 
-                        <label className="flex items-center justify-between cursor-pointer group">
-                            <div>
-                                <span className="text-sm font-medium">Save on-chain</span>
-                                <p className="text-xs text-muted">Record results on Base (optional)</p>
+                        {/* On-chain */}
+                        <button
+                            onClick={() => setIsOnchain(!isOnchain)}
+                            className="flex items-center justify-between touch-target w-full"
+                            style={{
+                                padding: 'var(--space-3) var(--space-4)',
+                                borderRadius: 'var(--radius-sm)',
+                                background: 'var(--bg-tertiary)',
+                                border: 'none',
+                            }}
+                        >
+                            <div className="text-left">
+                                <div className="text-[14px] font-medium" style={{ color: 'var(--text-primary)' }}>Save on-chain</div>
+                                <div className="text-[12px]" style={{ color: 'var(--text-secondary)' }}>Record results on Base</div>
                             </div>
                             <div
-                                onClick={() => setIsOnchain(!isOnchain)}
-                                className={`w-11 h-6 rounded-full relative transition-colors ${isOnchain ? 'bg-accent' : 'bg-foreground/10'
-                                    }`}
+                                className="relative rounded-full transition-colors"
+                                style={{
+                                    width: '44px', height: '24px',
+                                    background: isOnchain ? 'var(--accent-purple)' : 'var(--bg-hover)',
+                                }}
                             >
                                 <div
-                                    className={`w-5 h-5 rounded-full bg-white shadow absolute top-0.5 transition-transform ${isOnchain ? 'translate-x-5' : 'translate-x-0.5'
-                                        }`}
+                                    className="absolute rounded-full bg-white shadow transition-transform"
+                                    style={{
+                                        width: '20px', height: '20px',
+                                        top: '2px',
+                                        transform: isOnchain ? 'translateX(22px)' : 'translateX(2px)',
+                                    }}
                                 />
                             </div>
-                        </label>
+                        </button>
                     </div>
                 </div>
             )}
 
-            {/* Navigation */}
-            <div className="flex gap-3 pt-2">
+            {/* Navigation buttons */}
+            <div className="flex" style={{ gap: 'var(--space-3)' }}>
                 {step > 1 && (
                     <button
                         onClick={() => setStep(step - 1)}
-                        className="flex-1 py-3 rounded-xl border border-border text-muted font-medium hover:bg-foreground/5 transition-colors"
+                        className="flex-1 text-button touch-target transition-colors"
+                        style={{
+                            padding: '14px',
+                            borderRadius: 'var(--radius-sm)',
+                            background: 'var(--bg-tertiary)',
+                            border: '1px solid var(--border-subtle)',
+                            color: 'var(--text-secondary)',
+                        }}
                     >
                         Back
                     </button>
@@ -260,7 +359,14 @@ export default function CreatePoll({ onSubmit, onClose }: CreatePollProps) {
                 {onClose && step === 1 && (
                     <button
                         onClick={onClose}
-                        className="flex-1 py-3 rounded-xl border border-border text-muted font-medium hover:bg-foreground/5 transition-colors"
+                        className="flex-1 text-button touch-target transition-colors"
+                        style={{
+                            padding: '14px',
+                            borderRadius: 'var(--radius-sm)',
+                            background: 'var(--bg-tertiary)',
+                            border: '1px solid var(--border-subtle)',
+                            color: 'var(--text-secondary)',
+                        }}
                     >
                         Cancel
                     </button>
@@ -269,9 +375,15 @@ export default function CreatePoll({ onSubmit, onClose }: CreatePollProps) {
                     <button
                         onClick={() => setStep(step + 1)}
                         disabled={!isStepValid()}
-                        className="flex-1 py-3 rounded-xl font-bold text-white transition-all disabled:opacity-40 disabled:cursor-not-allowed"
+                        className="flex-1 text-button touch-target transition-all"
                         style={{
-                            background: isStepValid() ? 'var(--accent-gradient)' : 'rgba(255,255,255,0.1)',
+                            padding: '14px',
+                            borderRadius: 'var(--radius-sm)',
+                            background: isStepValid() ? 'var(--accent-blue)' : 'var(--bg-tertiary)',
+                            color: isStepValid() ? 'white' : 'var(--text-tertiary)',
+                            border: 'none',
+                            opacity: isStepValid() ? 1 : 0.5,
+                            cursor: isStepValid() ? 'pointer' : 'not-allowed',
                         }}
                     >
                         Next
@@ -280,16 +392,23 @@ export default function CreatePoll({ onSubmit, onClose }: CreatePollProps) {
                     <button
                         onClick={handleSubmit}
                         disabled={isSubmitting}
-                        className="flex-1 py-3 rounded-xl font-bold text-white transition-all animate-pulse-glow"
-                        style={{ background: 'var(--accent-gradient)' }}
+                        className="flex-1 text-button touch-target transition-all animate-pulse-glow"
+                        style={{
+                            padding: '14px',
+                            borderRadius: 'var(--radius-sm)',
+                            background: 'var(--accent-blue)',
+                            color: 'white',
+                            border: 'none',
+                            height: '48px',
+                        }}
                     >
                         {isSubmitting ? (
-                            <span className="flex items-center justify-center gap-2">
+                            <span className="flex items-center justify-center" style={{ gap: 'var(--space-2)' }}>
                                 <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
                                 Creating...
                             </span>
                         ) : (
-                            '🚀 Create Poll'
+                            'Create Poll'
                         )}
                     </button>
                 )}

@@ -11,7 +11,7 @@ interface TimerProps {
 export default function Timer({ expiresAt, onExpire, compact = false }: TimerProps) {
     const [timeLeft, setTimeLeft] = useState('');
     const [isExpired, setIsExpired] = useState(false);
-    const [urgency, setUrgency] = useState<'normal' | 'warning' | 'danger'>('normal');
+    const [isUrgent, setIsUrgent] = useState(false);
 
     useEffect(() => {
         function update() {
@@ -22,7 +22,6 @@ export default function Timer({ expiresAt, onExpire, compact = false }: TimerPro
             if (diff <= 0) {
                 setTimeLeft('Ended');
                 setIsExpired(true);
-                setUrgency('danger');
                 onExpire?.();
                 return;
             }
@@ -32,17 +31,14 @@ export default function Timer({ expiresAt, onExpire, compact = false }: TimerPro
             const seconds = Math.floor((diff % (1000 * 60)) / 1000);
 
             if (hours > 0) {
-                setTimeLeft(`${hours}h ${minutes}m`);
-                setUrgency('normal');
-            } else if (minutes > 10) {
-                setTimeLeft(`${minutes}m ${seconds}s`);
-                setUrgency('normal');
+                setTimeLeft(`${hours}h ${minutes}m left`);
+                setIsUrgent(false);
             } else if (minutes > 0) {
-                setTimeLeft(`${minutes}m ${seconds}s`);
-                setUrgency('warning');
+                setTimeLeft(`${minutes}m ${seconds}s left`);
+                setIsUrgent(minutes < 10);
             } else {
-                setTimeLeft(`${seconds}s`);
-                setUrgency('danger');
+                setTimeLeft(`${seconds}s left`);
+                setIsUrgent(true);
             }
         }
 
@@ -51,27 +47,27 @@ export default function Timer({ expiresAt, onExpire, compact = false }: TimerPro
         return () => clearInterval(interval);
     }, [expiresAt, onExpire]);
 
-    const colors = {
-        normal: 'text-muted',
-        warning: 'text-warning',
-        danger: 'text-danger',
-    };
-
     if (compact) {
         return (
-            <span className={`text-xs font-medium tabular-nums ${colors[urgency]} ${urgency === 'danger' && !isExpired ? 'animate-pulse' : ''}`}>
-                ⏱ {timeLeft}
+            <span className={`text-timer tabular-nums ${isUrgent && !isExpired ? 'animate-timer-pulse' : ''}`}>
+                {isExpired ? (
+                    <span style={{ color: 'var(--accent-red)' }}>Ended</span>
+                ) : (
+                    <>⏱ {timeLeft}</>
+                )}
             </span>
         );
     }
 
     return (
-        <div className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium ${colors[urgency]} ${isExpired ? 'bg-danger/10' : 'bg-foreground/5'} ${urgency === 'danger' && !isExpired ? 'animate-pulse' : ''}`}>
-            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <div className={`timer-badge ${isUrgent && !isExpired ? 'animate-timer-pulse' : ''}`}
+            style={isExpired ? { background: 'rgba(239, 68, 68, 0.15)', color: 'var(--accent-red)' } : {}}
+        >
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                 <circle cx="12" cy="12" r="10" />
                 <polyline points="12 6 12 12 16 14" />
             </svg>
-            {timeLeft}
+            <span className="tabular-nums">{timeLeft}</span>
         </div>
     );
 }

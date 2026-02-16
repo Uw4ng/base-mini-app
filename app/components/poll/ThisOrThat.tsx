@@ -45,28 +45,37 @@ export default function ThisOrThat({
 
     return (
         <div className="relative">
-            <div className="grid grid-cols-2 gap-0">
+            <div className="grid grid-cols-2" style={{ gap: 0 }}>
                 {/* Option A */}
                 <button
                     onClick={() => handleVote(optionA.id)}
                     disabled={!!selected}
-                    className={`relative h-32 rounded-l-xl overflow-hidden transition-all ${selected === optionA.id ? 'scale-[1.02] z-10' : ''
-                        } ${selected === optionB.id ? 'opacity-70' : ''}`}
+                    className="relative overflow-hidden transition-all touch-target"
+                    style={{
+                        height: '120px',
+                        borderTopLeftRadius: 'var(--radius-sm)',
+                        borderBottomLeftRadius: 'var(--radius-sm)',
+                        background: showResults
+                            ? `linear-gradient(to right, rgba(59, 130, 246, ${pctA / 100 * 0.3}), rgba(59, 130, 246, 0.05))`
+                            : 'linear-gradient(135deg, #1e3a5f 0%, #1a2744 100%)',
+                        border: selected === optionA.id ? '2px solid var(--accent-blue)' : '1px solid var(--border-subtle)',
+                        opacity: selected === optionB.id ? 0.6 : 1,
+                        transform: selected === optionA.id ? 'scale(1.02)' : 'scale(1)',
+                    }}
+                    aria-label={`Choose ${optionA.text}`}
                 >
-                    <div className="absolute inset-0 bg-gradient-to-br from-purple-600 to-blue-600" />
-                    <div className="relative z-10 h-full flex flex-col items-center justify-center px-3">
-                        <span className="text-lg font-bold text-white text-center leading-tight">
+                    <div className="relative z-10 h-full flex flex-col items-center justify-center" style={{ padding: 'var(--space-3)' }}>
+                        <span className="text-[16px] font-semibold text-center leading-tight" style={{ color: 'var(--text-primary)' }}>
                             {optionA.text}
                         </span>
                         {showResults && (
-                            <div className="mt-2 animate-scale-in">
-                                <span className="text-2xl font-black text-white">{Math.round(pctA)}%</span>
-                                <div className="text-xs text-white/60">{voteCounts[optionA.id] || 0} votes</div>
-                            </div>
-                        )}
-                        {selected === optionA.id && (
-                            <div className="absolute top-2 right-2 w-5 h-5 rounded-full bg-white/30 flex items-center justify-center">
-                                <span className="text-white text-xs">✓</span>
+                            <div className="animate-scale-in" style={{ marginTop: 'var(--space-2)' }}>
+                                <span className="text-stat-number tabular-nums" style={{ color: 'var(--accent-blue)' }}>
+                                    {Math.round(pctA)}%
+                                </span>
+                                <div className="text-[11px] tabular-nums" style={{ color: 'var(--text-tertiary)' }}>
+                                    {voteCounts[optionA.id] || 0} votes
+                                </div>
                             </div>
                         )}
                     </div>
@@ -76,33 +85,52 @@ export default function ThisOrThat({
                 <button
                     onClick={() => handleVote(optionB.id)}
                     disabled={!!selected}
-                    className={`relative h-32 rounded-r-xl overflow-hidden transition-all ${selected === optionB.id ? 'scale-[1.02] z-10' : ''
-                        } ${selected === optionA.id ? 'opacity-70' : ''}`}
+                    className="relative overflow-hidden transition-all touch-target"
+                    style={{
+                        height: '120px',
+                        borderTopRightRadius: 'var(--radius-sm)',
+                        borderBottomRightRadius: 'var(--radius-sm)',
+                        background: showResults
+                            ? `linear-gradient(to left, rgba(139, 92, 246, ${pctB / 100 * 0.3}), rgba(139, 92, 246, 0.05))`
+                            : 'linear-gradient(135deg, #2d1b4e 0%, #1a1530 100%)',
+                        border: selected === optionB.id ? '2px solid var(--accent-purple)' : '1px solid var(--border-subtle)',
+                        opacity: selected === optionA.id ? 0.6 : 1,
+                        transform: selected === optionB.id ? 'scale(1.02)' : 'scale(1)',
+                    }}
+                    aria-label={`Choose ${optionB.text}`}
                 >
-                    <div className="absolute inset-0 bg-gradient-to-br from-pink-500 to-red-500" />
-                    <div className="relative z-10 h-full flex flex-col items-center justify-center px-3">
-                        <span className="text-lg font-bold text-white text-center leading-tight">
+                    <div className="relative z-10 h-full flex flex-col items-center justify-center" style={{ padding: 'var(--space-3)' }}>
+                        <span className="text-[16px] font-semibold text-center leading-tight" style={{ color: 'var(--text-primary)' }}>
                             {optionB.text}
                         </span>
                         {showResults && (
-                            <div className="mt-2 animate-scale-in">
-                                <span className="text-2xl font-black text-white">{Math.round(pctB)}%</span>
-                                <div className="text-xs text-white/60">{voteCounts[optionB.id] || 0} votes</div>
-                            </div>
-                        )}
-                        {selected === optionB.id && (
-                            <div className="absolute top-2 left-2 w-5 h-5 rounded-full bg-white/30 flex items-center justify-center">
-                                <span className="text-white text-xs">✓</span>
+                            <div className="animate-scale-in" style={{ marginTop: 'var(--space-2)' }}>
+                                <span className="text-stat-number tabular-nums" style={{ color: 'var(--accent-purple)' }}>
+                                    {Math.round(pctB)}%
+                                </span>
+                                <div className="text-[11px] tabular-nums" style={{ color: 'var(--text-tertiary)' }}>
+                                    {voteCounts[optionB.id] || 0} votes
+                                </div>
                             </div>
                         )}
                     </div>
                 </button>
             </div>
 
-            {/* VS badge */}
+            {/* OR pill */}
             <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-20">
-                <div className={`w-10 h-10 rounded-full bg-background border-2 border-border flex items-center justify-center font-black text-sm ${animating ? 'animate-bounce' : ''}`}>
-                    VS
+                <div
+                    className={`flex items-center justify-center font-bold text-[13px] ${animating ? 'animate-scale-in' : ''}`}
+                    style={{
+                        width: '40px',
+                        height: '40px',
+                        borderRadius: '50%',
+                        background: 'var(--bg-primary)',
+                        border: '2px solid var(--border-default)',
+                        color: 'var(--text-secondary)',
+                    }}
+                >
+                    OR
                 </div>
             </div>
         </div>

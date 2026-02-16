@@ -25,9 +25,7 @@ export default function PollDetailPage() {
             const res = await fetch('/api/polls');
             const data = await res.json();
             const found = data.polls?.find((p: Poll) => p.id === pollId);
-            if (found) {
-                setPoll(found);
-            }
+            if (found) setPoll(found);
         } catch (error) {
             console.error('Failed to fetch poll:', error);
         } finally {
@@ -63,17 +61,17 @@ export default function PollDetailPage() {
 
     if (loading) {
         return (
-            <main className="min-h-screen max-w-lg mx-auto p-4">
-                <div className="glass rounded-2xl p-4 space-y-3 animate-pulse">
-                    <div className="flex items-center gap-2.5">
-                        <div className="w-9 h-9 rounded-full bg-foreground/10" />
-                        <div className="h-4 bg-foreground/10 rounded w-24" />
+            <main className="min-h-screen max-w-lg mx-auto" style={{ padding: 'var(--space-4)' }}>
+                <div className="poll-card">
+                    <div className="flex items-center" style={{ gap: 'var(--space-2)', marginBottom: 'var(--space-3)' }}>
+                        <div className="skeleton" style={{ width: '32px', height: '32px', borderRadius: '50%' }} />
+                        <div className="skeleton" style={{ width: '96px', height: '14px' }} />
                     </div>
-                    <div className="h-6 bg-foreground/10 rounded w-3/4" />
-                    <div className="space-y-2">
-                        <div className="h-12 bg-foreground/10 rounded-xl" />
-                        <div className="h-12 bg-foreground/10 rounded-xl" />
-                        <div className="h-12 bg-foreground/10 rounded-xl" />
+                    <div className="skeleton" style={{ width: '80%', height: '20px', marginBottom: 'var(--space-3)' }} />
+                    <div className="flex flex-col" style={{ gap: 'var(--space-2)' }}>
+                        <div className="skeleton" style={{ height: '48px' }} />
+                        <div className="skeleton" style={{ height: '48px' }} />
+                        <div className="skeleton" style={{ height: '48px' }} />
                     </div>
                 </div>
             </main>
@@ -82,15 +80,21 @@ export default function PollDetailPage() {
 
     if (!poll) {
         return (
-            <main className="min-h-screen max-w-lg mx-auto p-4 flex items-center justify-center">
+            <main className="min-h-screen max-w-lg mx-auto flex items-center justify-center" style={{ padding: 'var(--space-4)' }}>
                 <div className="text-center animate-fade-in">
-                    <div className="text-4xl mb-3">🤷</div>
-                    <h2 className="text-lg font-bold mb-1">Poll not found</h2>
-                    <p className="text-sm text-muted mb-4">This poll may have been removed.</p>
+                    <div className="text-4xl" style={{ marginBottom: 'var(--space-3)' }}>🤷</div>
+                    <h2 className="text-[18px] font-bold" style={{ marginBottom: 'var(--space-1)' }}>Poll not found</h2>
+                    <p className="text-metadata" style={{ marginBottom: 'var(--space-4)' }}>This poll may have been removed.</p>
                     <button
                         onClick={() => router.push('/')}
-                        className="px-4 py-2 rounded-xl text-sm font-medium text-white"
-                        style={{ background: 'var(--accent-gradient)' }}
+                        className="text-button touch-target"
+                        style={{
+                            padding: '12px 24px',
+                            borderRadius: 'var(--radius-sm)',
+                            background: 'var(--accent-blue)',
+                            color: 'white',
+                            border: 'none',
+                        }}
                     >
                         Go back home
                     </button>
@@ -103,39 +107,55 @@ export default function PollDetailPage() {
     const hasVoted = voted !== null;
 
     return (
-        <main className="min-h-screen max-w-lg mx-auto pb-8">
+        <main className="min-h-screen max-w-lg mx-auto" style={{ paddingBottom: 'var(--space-8)' }}>
             {/* Header */}
-            <header className="sticky top-0 z-40 glass px-4 py-3 flex items-center gap-3">
+            <header
+                className="sticky top-0 z-40 flex items-center"
+                style={{
+                    background: 'rgba(10, 10, 10, 0.85)',
+                    backdropFilter: 'blur(12px)',
+                    WebkitBackdropFilter: 'blur(12px)',
+                    borderBottom: '1px solid var(--border-subtle)',
+                    padding: 'var(--space-3) var(--space-4)',
+                    gap: 'var(--space-3)',
+                }}
+            >
                 <button
                     onClick={() => router.push('/')}
-                    className="w-8 h-8 rounded-full bg-foreground/5 flex items-center justify-center hover:bg-foreground/10 transition-colors"
+                    className="flex items-center justify-center transition-colors touch-target"
+                    style={{
+                        width: '32px', height: '32px',
+                        borderRadius: '50%',
+                        background: 'var(--bg-tertiary)',
+                        border: 'none',
+                    }}
+                    aria-label="Go back"
                 >
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--text-primary)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                         <polyline points="15 18 9 12 15 6" />
                     </svg>
                 </button>
-                <h1 className="text-sm font-bold flex-1">Poll Details</h1>
+                <h1 className="text-[15px] font-bold flex-1">Poll Details</h1>
                 <ShareButton pollId={poll.id} question={poll.question} />
             </header>
 
-            <div className="px-4 pt-4 space-y-4">
-                {/* Main poll */}
+            <div className="flex flex-col" style={{ padding: 'var(--space-4)', gap: 'var(--space-4)' }}>
+                {/* Poll */}
                 {poll.poll_type === 'this_or_that' ? (
-                    <div className="glass rounded-2xl p-4 space-y-3">
-                        <div className="flex items-center gap-2.5 mb-2">
+                    <div className="poll-card">
+                        <div className="flex items-center" style={{ gap: 'var(--space-2)', marginBottom: 'var(--space-3)' }}>
                             <div
-                                className="w-9 h-9 rounded-full flex items-center justify-center text-sm font-bold"
+                                className="rounded-full flex items-center justify-center text-sm font-semibold text-white"
                                 style={{
-                                    background: `hsl(${(poll.creator_fid * 137.508) % 360}, 60%, 50%)`,
+                                    width: '32px', height: '32px',
+                                    background: `hsl(${(poll.creator_fid * 137.508) % 360}, 55%, 50%)`,
                                 }}
                             >
                                 {poll.creator_username.charAt(0).toUpperCase()}
                             </div>
-                            <div>
-                                <span className="text-sm font-semibold">{poll.creator_username}</span>
-                            </div>
+                            <span className="text-[14px] font-semibold">{poll.creator_username}</span>
                         </div>
-                        <h3 className="text-lg font-bold">{poll.question}</h3>
+                        <h3 className="text-poll-question" style={{ marginBottom: 'var(--space-3)' }}>{poll.question}</h3>
                         <ThisOrThat
                             options={poll.options}
                             voteCounts={poll.voteCounts || {}}
@@ -153,9 +173,9 @@ export default function PollDetailPage() {
                     />
                 )}
 
-                {/* Full results (shown after voting) */}
+                {/* Full results */}
                 {(hasVoted || isExpired) && (
-                    <div className="glass rounded-2xl p-4">
+                    <div className="poll-card">
                         <PollResults
                             question={poll.question}
                             options={poll.options}
@@ -166,28 +186,30 @@ export default function PollDetailPage() {
                     </div>
                 )}
 
-                {/* Reactions section */}
-                <div className="glass rounded-2xl p-4">
-                    <h3 className="text-sm font-bold mb-3">Reactions</h3>
-                    <div className="space-y-2 mb-3">
-                        {/* Mock reactions */}
+                {/* Reactions */}
+                <div className="poll-card">
+                    <h3 className="text-[14px] font-bold" style={{ marginBottom: 'var(--space-3)' }}>Reactions</h3>
+                    <div className="flex flex-col" style={{ gap: 'var(--space-2)', marginBottom: 'var(--space-3)' }}>
                         {[
                             { user: 'alice', reaction: 'Great question! 🔥', fid: 2000 },
                             { user: 'bob', reaction: '💯', fid: 2001 },
                             { user: 'charlie', reaction: 'Mini Apps FTW! 🚀', fid: 2002 },
                         ].map((r, i) => (
-                            <div key={i} className="flex items-start gap-2 text-xs animate-fade-in" style={{ animationDelay: `${i * 0.1}s` }}>
+                            <div key={i} className="flex items-start animate-fade-in" style={{ gap: 'var(--space-2)', animationDelay: `${i * 100}ms` }}>
                                 <div
-                                    className="w-5 h-5 rounded-full flex items-center justify-center text-[8px] font-bold text-white flex-shrink-0 mt-0.5"
+                                    className="flex items-center justify-center text-[10px] font-bold text-white flex-shrink-0"
                                     style={{
+                                        width: '24px', height: '24px',
+                                        borderRadius: '50%',
+                                        marginTop: '1px',
                                         background: `hsl(${(r.fid * 137.508) % 360}, 55%, 45%)`,
                                     }}
                                 >
                                     {r.user.charAt(0).toUpperCase()}
                                 </div>
-                                <div>
-                                    <span className="font-medium text-accent-light">@{r.user}</span>
-                                    <span className="text-muted ml-1">{r.reaction}</span>
+                                <div className="text-reaction">
+                                    <span className="font-medium" style={{ color: 'var(--accent-blue)' }}>@{r.user}</span>
+                                    <span style={{ color: 'var(--text-secondary)', marginLeft: '4px' }}>{r.reaction}</span>
                                 </div>
                             </div>
                         ))}
@@ -198,7 +220,14 @@ export default function PollDetailPage() {
                 {/* Result card toggle */}
                 <button
                     onClick={() => setShowResultCard(!showResultCard)}
-                    className="w-full py-2.5 rounded-xl border border-border text-sm text-muted hover:text-foreground hover:border-foreground/20 transition-colors"
+                    className="w-full text-[13px] font-medium transition-colors touch-target"
+                    style={{
+                        padding: 'var(--space-3)',
+                        borderRadius: 'var(--radius-sm)',
+                        border: '1px solid var(--border-default)',
+                        background: 'transparent',
+                        color: 'var(--text-secondary)',
+                    }}
                 >
                     {showResultCard ? 'Hide' : 'Show'} Shareable Result Card
                 </button>

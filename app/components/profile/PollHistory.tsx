@@ -11,16 +11,18 @@ interface PollHistoryProps {
 export default function PollHistory({ polls, onPollClick }: PollHistoryProps) {
     if (polls.length === 0) {
         return (
-            <div className="text-center py-8">
-                <div className="text-3xl mb-2">📋</div>
-                <p className="text-sm text-muted">No polls created yet</p>
+            <div className="text-center" style={{ padding: 'var(--space-8) 0' }}>
+                <div className="text-3xl" style={{ marginBottom: 'var(--space-2)' }}>📋</div>
+                <p className="text-metadata">No polls created yet</p>
             </div>
         );
     }
 
     return (
-        <div className="space-y-2">
-            <h3 className="text-sm font-bold text-muted mb-3">Your Polls</h3>
+        <div className="flex flex-col" style={{ gap: 'var(--space-2)' }}>
+            <h3 className="text-[13px] font-bold" style={{ color: 'var(--text-secondary)', marginBottom: 'var(--space-2)' }}>
+                Your Polls
+            </h3>
             {polls.map(poll => {
                 const isExpired = poll.expires_at ? new Date(poll.expires_at) < new Date() : false;
 
@@ -28,24 +30,40 @@ export default function PollHistory({ polls, onPollClick }: PollHistoryProps) {
                     <button
                         key={poll.id}
                         onClick={() => onPollClick?.(poll.id)}
-                        className="w-full text-left glass rounded-xl p-3 transition-all hover:bg-card-hover active:scale-[0.98]"
+                        className="w-full text-left transition-all touch-target"
+                        style={{
+                            background: 'var(--bg-secondary)',
+                            border: '1px solid var(--border-subtle)',
+                            borderRadius: 'var(--radius-md)',
+                            padding: 'var(--space-3)',
+                        }}
                     >
-                        <div className="flex items-start justify-between gap-2">
+                        <div className="flex items-start justify-between" style={{ gap: 'var(--space-2)' }}>
                             <div className="flex-1 min-w-0">
-                                <h4 className="text-sm font-semibold truncate">{poll.question}</h4>
-                                <div className="flex items-center gap-2 mt-1">
-                                    <span className="text-[10px] text-muted">{timeAgo(poll.created_at)}</span>
-                                    <span className="text-[10px] text-muted">•</span>
-                                    <span className="text-[10px] text-muted">{poll.total_votes} votes</span>
+                                <h4 className="text-[14px] font-semibold truncate" style={{ color: 'var(--text-primary)' }}>
+                                    {poll.question}
+                                </h4>
+                                <div className="flex items-center" style={{ gap: 'var(--space-2)', marginTop: 'var(--space-1)' }}>
+                                    <span className="text-[11px]" style={{ color: 'var(--text-tertiary)' }}>{timeAgo(poll.created_at)}</span>
+                                    <span className="text-[11px]" style={{ color: 'var(--text-tertiary)' }}>•</span>
+                                    <span className="text-[11px] tabular-nums" style={{ color: 'var(--text-tertiary)' }}>{poll.total_votes} votes</span>
                                     {poll.is_onchain && (
                                         <>
-                                            <span className="text-[10px] text-muted">•</span>
-                                            <span className="text-[10px] text-accent-light">⛓ On-chain</span>
+                                            <span className="text-[11px]" style={{ color: 'var(--text-tertiary)' }}>•</span>
+                                            <span className="text-[11px]" style={{ color: 'var(--accent-purple)' }}>⛓ On-chain</span>
                                         </>
                                     )}
                                 </div>
                             </div>
-                            <div className={`text-[10px] px-1.5 py-0.5 rounded font-medium ${isExpired ? 'bg-danger/10 text-danger' : 'bg-success/10 text-success'}`}>
+                            <div
+                                className="text-[11px] font-medium"
+                                style={{
+                                    padding: '2px 8px',
+                                    borderRadius: 'var(--radius-full)',
+                                    background: isExpired ? 'rgba(239, 68, 68, 0.1)' : 'rgba(34, 197, 94, 0.1)',
+                                    color: isExpired ? 'var(--accent-red)' : 'var(--accent-green)',
+                                }}
+                            >
                                 {isExpired ? 'Ended' : 'Active'}
                             </div>
                         </div>

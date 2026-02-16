@@ -10,6 +10,8 @@ interface ResultCardProps {
     creatorUsername: string;
 }
 
+const OPTION_COLORS = ['var(--option-1)', 'var(--option-2)', 'var(--option-3)', 'var(--option-4)'];
+
 export default function ResultCard({
     question,
     options,
@@ -31,55 +33,74 @@ export default function ResultCard({
     const winnerPct = totalVotes > 0 ? (maxVotes / totalVotes) * 100 : 0;
 
     return (
-        <div className="relative overflow-hidden rounded-2xl p-5"
+        <div
+            className="relative overflow-hidden animate-scale-in"
             style={{
-                background: 'linear-gradient(135deg, #1a1025 0%, #0f0a1a 50%, #0a0a14 100%)',
-                border: '1px solid rgba(132, 94, 247, 0.2)',
+                borderRadius: 'var(--radius-md)',
+                padding: 'var(--space-5)',
+                background: 'linear-gradient(145deg, #111118 0%, #0c0c14 50%, #0a0a10 100%)',
+                border: '1px solid var(--border-subtle)',
             }}
         >
-            {/* Decorative glow */}
+            {/* Subtle glow */}
             <div
-                className="absolute -top-20 -right-20 w-40 h-40 rounded-full opacity-20 blur-3xl"
-                style={{ background: 'var(--accent-gradient)' }}
+                className="absolute -top-16 -right-16 w-32 h-32 rounded-full blur-3xl"
+                style={{ background: 'var(--accent-blue)', opacity: 0.08 }}
             />
 
-            {/* Quick Poll branding */}
-            <div className="flex items-center gap-1.5 mb-3">
-                <div className="w-5 h-5 rounded-md flex items-center justify-center text-[10px]"
-                    style={{ background: 'var(--accent-gradient)' }}>
+            {/* Branding */}
+            <div className="flex items-center" style={{ gap: 'var(--space-2)', marginBottom: 'var(--space-4)' }}>
+                <div
+                    className="flex items-center justify-center text-[10px]"
+                    style={{
+                        width: '20px', height: '20px',
+                        borderRadius: 'var(--radius-sm)',
+                        background: 'var(--accent-blue)',
+                    }}
+                >
                     📊
                 </div>
-                <span className="text-[10px] font-bold text-accent-light tracking-wider uppercase">Quick Poll Results</span>
+                <span className="text-[11px] font-semibold tracking-wider uppercase" style={{ color: 'var(--accent-blue)' }}>
+                    Quick Poll Results
+                </span>
             </div>
 
             {/* Question */}
-            <h3 className="text-base font-bold mb-4 leading-snug">{question}</h3>
+            <h3 className="text-poll-question" style={{ marginBottom: 'var(--space-4)' }}>{question}</h3>
 
-            {/* Results summary */}
-            <div className="space-y-2 mb-4">
-                {options.map((option) => {
+            {/* Result bars */}
+            <div className="flex flex-col" style={{ gap: 'var(--space-2)', marginBottom: 'var(--space-4)' }}>
+                {options.map((option, index) => {
                     const count = voteCounts[option.id] || 0;
                     const pct = totalVotes > 0 ? (count / totalVotes) * 100 : 0;
                     const isWinner = option.id === winnerId;
+                    const color = OPTION_COLORS[index % OPTION_COLORS.length];
 
                     return (
-                        <div key={option.id} className="flex items-center gap-2">
-                            <div className="flex-1">
-                                <div className="flex justify-between text-xs mb-0.5">
-                                    <span className={isWinner ? 'font-bold text-accent-light' : 'text-muted'}>
-                                        {isWinner ? '👑 ' : ''}{option.text}
-                                    </span>
-                                    <span className="text-muted tabular-nums">{Math.round(pct)}%</span>
-                                </div>
-                                <div className="h-1.5 rounded-full bg-foreground/5 overflow-hidden">
-                                    <div
-                                        className="h-full rounded-full"
-                                        style={{
-                                            width: `${pct}%`,
-                                            background: isWinner ? 'var(--accent-gradient)' : 'rgba(255,255,255,0.15)',
-                                        }}
-                                    />
-                                </div>
+                        <div key={option.id}>
+                            <div className="flex justify-between text-[13px]" style={{ marginBottom: '4px' }}>
+                                <span style={{ color: isWinner ? color : 'var(--text-secondary)', fontWeight: isWinner ? 600 : 400 }}>
+                                    {isWinner ? '✓ ' : ''}{option.text}
+                                </span>
+                                <span className="tabular-nums" style={{ color: 'var(--text-secondary)' }}>{Math.round(pct)}%</span>
+                            </div>
+                            <div
+                                className="overflow-hidden"
+                                style={{
+                                    height: '6px',
+                                    borderRadius: 'var(--radius-full)',
+                                    background: 'var(--bg-tertiary)',
+                                }}
+                            >
+                                <div
+                                    style={{
+                                        width: `${pct}%`,
+                                        height: '100%',
+                                        borderRadius: 'var(--radius-full)',
+                                        background: isWinner ? color : 'var(--bg-hover)',
+                                        transition: 'width 600ms ease-out',
+                                    }}
+                                />
                             </div>
                         </div>
                     );
@@ -87,10 +108,17 @@ export default function ResultCard({
             </div>
 
             {/* Footer */}
-            <div className="flex items-center justify-between text-[10px] text-muted border-t border-foreground/5 pt-2">
+            <div
+                className="flex items-center justify-between text-[11px]"
+                style={{
+                    paddingTop: 'var(--space-3)',
+                    borderTop: '1px solid var(--border-subtle)',
+                    color: 'var(--text-tertiary)',
+                }}
+            >
                 <span>{totalVotes} votes • by @{creatorUsername}</span>
                 {winnerOption && (
-                    <span className="text-accent-light font-medium">
+                    <span style={{ color: 'var(--accent-green)', fontWeight: 600 }}>
                         Winner: {winnerOption.text} ({Math.round(winnerPct)}%)
                     </span>
                 )}

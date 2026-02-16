@@ -15,7 +15,7 @@ export default function ShareButton({ pollId, question }: ShareButtonProps) {
         : `/poll/${pollId}`;
 
     const handleShare = async () => {
-        // Try native share first (works in MiniKit / mobile)
+        // Try native share (MiniKit / mobile)
         if (typeof navigator !== 'undefined' && navigator.share) {
             try {
                 await navigator.share({
@@ -25,30 +25,40 @@ export default function ShareButton({ pollId, question }: ShareButtonProps) {
                 });
                 return;
             } catch {
-                // User cancelled or not supported
+                // Cancelled
             }
         }
 
-        // Fallback: copy to clipboard
+        // Fallback: copy
         try {
             await navigator.clipboard.writeText(`${question}\n\nVote now: ${shareUrl}`);
             setCopied(true);
             setTimeout(() => setCopied(false), 2000);
         } catch {
-            // Clipboard not available
+            // Not available
         }
     };
 
     return (
         <button
             onClick={handleShare}
-            className="flex items-center gap-1 text-xs text-muted hover:text-foreground transition-colors px-2 py-1 rounded-lg hover:bg-foreground/5"
+            className="flex items-center transition-colors touch-target"
+            style={{
+                gap: 'var(--space-1)',
+                padding: 'var(--space-1) var(--space-2)',
+                borderRadius: 'var(--radius-sm)',
+                fontSize: '13px',
+                color: 'var(--text-secondary)',
+                background: 'transparent',
+                border: 'none',
+            }}
+            aria-label="Share poll"
         >
             {copied ? (
-                <span className="text-success animate-fade-in">✓ Copied</span>
+                <span className="animate-fade-in" style={{ color: 'var(--accent-green)', fontWeight: 600 }}>✓ Copied</span>
             ) : (
                 <>
-                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                         <circle cx="18" cy="5" r="3" />
                         <circle cx="6" cy="12" r="3" />
                         <circle cx="18" cy="19" r="3" />

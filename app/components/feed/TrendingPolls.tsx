@@ -32,14 +32,14 @@ export default function TrendingPolls({ polls: initialPolls, onPollClick }: Tren
 
     if (loading) {
         return (
-            <div className="mb-4">
-                <div className="flex items-center gap-2 mb-3 px-1">
+            <div style={{ marginBottom: 'var(--space-4)' }}>
+                <div className="flex items-center" style={{ gap: 'var(--space-2)', marginBottom: 'var(--space-3)', paddingLeft: 'var(--space-1)' }}>
                     <span>🔥</span>
-                    <span className="text-sm font-bold">Trending</span>
+                    <span className="text-[14px] font-bold">Trending</span>
                 </div>
-                <div className="flex gap-3 overflow-x-auto pb-2 -mx-1 px-1 scrollbar-hide">
+                <div className="flex overflow-x-auto" style={{ gap: 'var(--space-3)', paddingBottom: 'var(--space-2)', scrollbarWidth: 'none' }}>
                     {[1, 2, 3].map(i => (
-                        <div key={i} className="flex-shrink-0 w-48 h-24 glass rounded-xl animate-pulse" />
+                        <div key={i} className="skeleton flex-shrink-0" style={{ width: '208px', height: '96px', borderRadius: 'var(--radius-md)' }} />
                     ))}
                 </div>
             </div>
@@ -48,42 +48,64 @@ export default function TrendingPolls({ polls: initialPolls, onPollClick }: Tren
 
     if (polls.length === 0) return null;
 
-    const trendingColors = [
-        'from-violet-600/20 to-purple-900/20',
-        'from-pink-600/20 to-rose-900/20',
-        'from-blue-600/20 to-indigo-900/20',
-        'from-emerald-600/20 to-green-900/20',
-        'from-amber-600/20 to-orange-900/20',
+    const accentColors = [
+        { bg: 'rgba(59, 130, 246, 0.08)', border: 'rgba(59, 130, 246, 0.15)' },
+        { bg: 'rgba(139, 92, 246, 0.08)', border: 'rgba(139, 92, 246, 0.15)' },
+        { bg: 'rgba(245, 158, 11, 0.08)', border: 'rgba(245, 158, 11, 0.15)' },
+        { bg: 'rgba(34, 197, 94, 0.08)', border: 'rgba(34, 197, 94, 0.15)' },
+        { bg: 'rgba(239, 68, 68, 0.08)', border: 'rgba(239, 68, 68, 0.15)' },
     ];
 
     return (
-        <div className="mb-4">
-            <div className="flex items-center gap-2 mb-3 px-1">
+        <div style={{ marginBottom: 'var(--space-4)' }}>
+            <div className="flex items-center" style={{ gap: 'var(--space-2)', marginBottom: 'var(--space-3)', paddingLeft: 'var(--space-1)' }}>
                 <span>🔥</span>
-                <span className="text-sm font-bold">Trending</span>
+                <span className="text-[14px] font-bold">Trending</span>
             </div>
-            <div className="flex gap-3 overflow-x-auto pb-2 -mx-1 px-1" style={{ scrollbarWidth: 'none' }}>
-                {polls.map((poll, index) => (
-                    <button
-                        key={poll.id}
-                        onClick={() => onPollClick?.(poll.id)}
-                        className={`flex-shrink-0 w-52 p-3 rounded-xl bg-gradient-to-br ${trendingColors[index % trendingColors.length]} border border-foreground/5 text-left transition-all hover:scale-[1.02] active:scale-[0.98]`}
-                        style={{ animationDelay: `${index * 0.1}s` }}
-                    >
-                        <div className="text-xs text-muted mb-1.5">
-                            @{poll.creator_username}
-                        </div>
-                        <div className="text-sm font-semibold leading-tight line-clamp-2 mb-2">
-                            {poll.question}
-                        </div>
-                        <div className="flex items-center justify-between">
-                            <span className="text-[10px] text-muted">{poll.total_votes} votes</span>
-                            <span className="text-[10px] text-accent-light font-medium">
-                                {poll.options.length} options
-                            </span>
-                        </div>
-                    </button>
-                ))}
+            <div className="flex overflow-x-auto" style={{ gap: 'var(--space-3)', paddingBottom: 'var(--space-2)', scrollbarWidth: 'none' }}>
+                {polls.map((poll, index) => {
+                    const color = accentColors[index % accentColors.length];
+                    return (
+                        <button
+                            key={poll.id}
+                            onClick={() => onPollClick?.(poll.id)}
+                            className="flex-shrink-0 text-left transition-all touch-target animate-fade-in"
+                            style={{
+                                width: '208px',
+                                padding: 'var(--space-3)',
+                                borderRadius: 'var(--radius-md)',
+                                background: color.bg,
+                                border: `1px solid ${color.border}`,
+                                animationDelay: `${index * 100}ms`,
+                            }}
+                            aria-label={`View poll: ${poll.question}`}
+                        >
+                            <div className="text-metadata" style={{ marginBottom: 'var(--space-1)' }}>
+                                @{poll.creator_username}
+                            </div>
+                            <div
+                                className="text-[14px] font-semibold leading-tight overflow-hidden"
+                                style={{
+                                    display: '-webkit-box',
+                                    WebkitLineClamp: 2,
+                                    WebkitBoxOrient: 'vertical',
+                                    color: 'var(--text-primary)',
+                                    marginBottom: 'var(--space-2)',
+                                }}
+                            >
+                                {poll.question}
+                            </div>
+                            <div className="flex items-center justify-between">
+                                <span className="text-[11px] tabular-nums" style={{ color: 'var(--text-tertiary)' }}>
+                                    {poll.total_votes} votes
+                                </span>
+                                <span className="text-[11px] font-medium" style={{ color: 'var(--accent-blue)' }}>
+                                    {poll.options.length} options
+                                </span>
+                            </div>
+                        </button>
+                    );
+                })}
             </div>
         </div>
     );

@@ -51,18 +51,18 @@ export default function PollFeed({ initialPolls }: PollFeedProps) {
 
     if (loading) {
         return (
-            <div className="space-y-4">
+            <div className="flex flex-col" style={{ gap: 'var(--space-6)' }}>
                 {[1, 2, 3].map(i => (
-                    <div key={i} className="glass rounded-2xl p-4 space-y-3 animate-pulse">
-                        <div className="flex items-center gap-2.5">
-                            <div className="w-9 h-9 rounded-full bg-foreground/10" />
-                            <div className="h-4 bg-foreground/10 rounded w-24" />
+                    <div key={i} className="poll-card">
+                        <div className="flex items-center" style={{ gap: 'var(--space-2)', marginBottom: 'var(--space-3)' }}>
+                            <div className="skeleton" style={{ width: '32px', height: '32px', borderRadius: '50%' }} />
+                            <div className="skeleton" style={{ width: '96px', height: '16px' }} />
                         </div>
-                        <div className="h-5 bg-foreground/10 rounded w-3/4" />
-                        <div className="space-y-2">
-                            <div className="h-10 bg-foreground/10 rounded-xl" />
-                            <div className="h-10 bg-foreground/10 rounded-xl" />
-                            <div className="h-10 bg-foreground/10 rounded-xl" />
+                        <div className="skeleton" style={{ width: '75%', height: '20px', marginBottom: 'var(--space-3)' }} />
+                        <div className="flex flex-col" style={{ gap: 'var(--space-2)' }}>
+                            <div className="skeleton" style={{ height: '48px', borderRadius: 'var(--radius-sm)' }} />
+                            <div className="skeleton" style={{ height: '48px', borderRadius: 'var(--radius-sm)' }} />
+                            <div className="skeleton" style={{ height: '48px', borderRadius: 'var(--radius-sm)' }} />
                         </div>
                     </div>
                 ))}
@@ -72,21 +72,21 @@ export default function PollFeed({ initialPolls }: PollFeedProps) {
 
     if (polls.length === 0) {
         return (
-            <div className="text-center py-16 animate-fade-in">
-                <div className="text-4xl mb-3">📊</div>
-                <h3 className="text-lg font-bold mb-1">No polls yet</h3>
-                <p className="text-sm text-muted">Be the first to create one!</p>
+            <div className="text-center animate-fade-in" style={{ padding: 'var(--space-8) 0' }}>
+                <div className="text-4xl" style={{ marginBottom: 'var(--space-3)' }}>📊</div>
+                <h3 className="text-[18px] font-bold" style={{ marginBottom: 'var(--space-1)' }}>No polls yet</h3>
+                <p className="text-metadata">Be the first to create one!</p>
             </div>
         );
     }
 
     return (
-        <div className="space-y-4">
+        <div className="flex flex-col" style={{ gap: 'var(--space-6)' }}>
             {polls.map((poll, index) => (
                 <div
                     key={poll.id}
-                    style={{ animationDelay: `${index * 0.05}s` }}
                     className="animate-slide-down"
+                    style={{ animationDelay: `${index * 50}ms` }}
                 >
                     <PollCard
                         poll={poll}
