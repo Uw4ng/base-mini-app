@@ -11,6 +11,7 @@ import ShareButton from '@/app/components/social/ShareButton';
 import OnchainProof from '@/app/components/onchain/OnchainProof';
 import OnchainSaveButton from '@/app/components/onchain/OnchainSaveButton';
 import type { Poll, PollOption } from '@/lib/db';
+import { useMiniKit } from '../../context/MiniKitContext';
 
 interface EnrichedPoll extends Poll {
     voteCounts?: Record<string, number>;
@@ -23,9 +24,11 @@ interface EnrichedPoll extends Poll {
     reactions?: { fid: number; username: string; reaction: string; avatar: string | null }[];
 }
 
-const USER_FID = 9999;
+// const USER_FID = 9999; // Replaced by dynamic context
 
 export default function PollDetailPage() {
+    const { user } = useMiniKit();
+    const USER_FID = user?.fid ?? 9999;
     const params = useParams();
     const router = useRouter();
     const pollId = params.id as string;
@@ -50,7 +53,7 @@ export default function PollDetailPage() {
         } finally {
             setLoading(false);
         }
-    }, [pollId]);
+    }, [pollId, USER_FID]);
 
     useEffect(() => {
         fetchPoll();
@@ -76,7 +79,7 @@ export default function PollDetailPage() {
             }
         }, 15000);
         return () => clearInterval(interval);
-    }, [pollId]);
+    }, [pollId, USER_FID]);
 
     const handleVote = async (pId: string, optionId: string, prediction?: string) => {
         setVoted(optionId);
