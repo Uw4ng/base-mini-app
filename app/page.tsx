@@ -50,6 +50,12 @@ export default function Home() {
   const sentinelRef = useRef<HTMLDivElement | null>(null);
   const pollIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
+  // Post-creation UX
+  const [toast, setToast] = useState<string | null>(null);
+  const [showSharePrompt, setShowSharePrompt] = useState(false);
+  const [lastCreatedPoll, setLastCreatedPoll] = useState<{ id: string; question: string } | null>(null);
+  const [highlightedPollId, setHighlightedPollId] = useState<string | null>(null);
+
   // ==========================
   // DATA FETCHING
   // ==========================
@@ -226,9 +232,10 @@ export default function Home() {
 
   const handleCreatePoll = async (pollData: {
     question: string;
-    options: { id: string; text: string }[];
+    options: { id: string; text: string; imageUrl?: string }[];
     poll_type: string;
     is_anonymous: boolean;
+    is_prediction: boolean;
     expires_at: string | null;
     is_onchain: boolean;
   }) => {
@@ -245,11 +252,32 @@ export default function Home() {
       const data = await res.json();
       if (data.poll) {
         setPolls(prev => [data.poll, ...prev]);
+        setHighlightedPollId(data.poll.id);
+        setTimeout(() => setHighlightedPollId(null), 3000);
+
+        // Show toast
+        setToast('Poll created! Share it with friends?');
+        setTimeout(() => setToast(null), 4000);
+
+        // Show share prompt
+        setLastCreatedPoll({ id: data.poll.id, question: pollData.question });
+        setTimeout(() => setShowSharePrompt(true), 600);
       }
     } catch (error) {
       console.error('Failed to create poll:', error);
+      setToast('Failed to create poll');
+      setTimeout(() => setToast(null), 3000);
     }
     setShowCreate(false);
+  };
+
+  const handleShareToFarcaster = () => {
+    if (!lastCreatedPoll) return;
+    const castText = `I just asked: ${lastCreatedPoll.question} — Vote now! 🗳️`;
+    const shareUrl = `${window.location.origin}/poll/${lastCreatedPoll.id}`;
+    const farcasterUrl = `https://warpcast.com/~/compose?text=${encodeURIComponent(castText)}&embeds[]=${encodeURIComponent(shareUrl)}`;
+    window.open(farcasterUrl, '_blank');
+    setShowSharePrompt(false);
   };
 
   // ==========================
@@ -305,7 +333,14 @@ export default function Home() {
           <div
             key={poll.id}
             className="animate-slide-down"
-            style={{ animationDelay: `${index * 50}ms` }}
+            style={{
+              animationDelay: `${index * 50}ms`,
+              ...(highlightedPollId === poll.id ? {
+                boxShadow: '0 0 0 2px var(--accent-blue), 0 0 20px rgba(59, 130, 246, 0.15)',
+                borderRadius: 'var(--radius-md)',
+                transition: 'box-shadow 3s ease-out',
+              } : {}),
+            }}
           >
             <PollCard
               poll={poll}
@@ -508,6 +543,104 @@ export default function Home() {
           onClose={() => setShowCreate(false)}
         />
       </BottomSheet>
+
+      {/* Toast notification */}
+      {toast && (
+        <div
+          className="fixed left-1/2 bottom-28 z-50 animate-slide-up"
+          style={{
+            transform: 'translateX(-50%)',
+            background: 'var(--bg-secondary)',
+            border: '1px solid var(--border-default)',
+            borderRadius: 'var(--radius-md)',
+            padding: '12px 20px',
+            fontSize: '14px',
+            fontWeight: 500,
+            color: 'var(--text-primary)',
+            boxShadow: '0 8px 32px rgba(0, 0, 0, 0.4)',
+            whiteSpace: 'nowrap',
+            maxWidth: '90%',
+          }}
+        >
+          {toast}
+        </div>
+      )}
+
+      {/* Farcaster share prompt */}
+      {showSharePrompt && lastCreatedPoll && (
+        <div className="fixed inset-0 z-50 flex items-end justify-center" style={{ background: 'rgba(0, 0, 0, 0.5)' }}>
+          <div
+            className="w-full max-w-lg animate-slide-up"
+            style={{
+              background: 'var(--bg-secondary)',
+              borderTopLeftRadius: 'var(--radius-lg)',
+              borderTopRightRadius: 'var(--radius-lg)',
+              padding: 'var(--space-5)',
+            }}
+          >
+            {/* Drag handle */}
+            <div className="flex justify-center" style={{ marginBottom: 'var(--space-4)' }}>
+              <div className="rounded-full" style={{ width: '36px', height: '4px', background: 'var(--border-default)' }} />
+            </div>
+
+            <div className="text-center" style={{ marginBottom: 'var(--space-4)' }}>
+              <div className="text-3xl" style={{ marginBottom: 'var(--space-2)' }}>🗳️</div>
+              <h3 className="text-[16px] font-bold" style={{ marginBottom: 'var(--space-1)' }}>Share your poll</h3>
+              <p className="text-[13px]" style={{ color: 'var(--text-secondary)' }}>Cast it to your Farcaster feed</p>
+            </div>
+
+            {/* Preview */}
+            <div
+              className="text-[14px]"
+              style={{
+                background: 'var(--bg-tertiary)',
+                borderRadius: 'var(--radius-sm)',
+                padding: 'var(--space-3) var(--space-4)',
+                marginBottom: 'var(--space-4)',
+                color: 'var(--text-secondary)',
+                lineHeight: 1.5,
+              }}
+            >
+              I just asked: <strong style={{ color: 'var(--text-primary)' }}>{lastCreatedPoll.question}</strong> — Vote now! 🗳️
+            </div>
+
+            {/* Action buttons */}
+            <div className="flex flex-col" style={{ gap: 'var(--space-2)' }}>
+              <button
+                onClick={handleShareToFarcaster}
+                className="w-full touch-target"
+                style={{
+                  padding: '14px',
+                  borderRadius: 'var(--radius-sm)',
+                  background: 'var(--accent-purple)',
+                  color: 'white',
+                  fontSize: '15px',
+                  fontWeight: 700,
+                  border: 'none',
+                  height: '48px',
+                }}
+              >
+                Cast to Farcaster
+              </button>
+              <button
+                onClick={() => setShowSharePrompt(false)}
+                className="w-full touch-target"
+                style={{
+                  padding: '14px',
+                  borderRadius: 'var(--radius-sm)',
+                  background: 'transparent',
+                  color: 'var(--text-secondary)',
+                  fontSize: '14px',
+                  fontWeight: 500,
+                  border: 'none',
+                }}
+              >
+                Maybe later
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </main>
   );
 }

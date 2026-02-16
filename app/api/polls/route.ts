@@ -56,7 +56,11 @@ export async function POST(request: NextRequest) {
             is_onchain: body.is_onchain || false,
         });
 
-        return NextResponse.json({ poll: enrichPoll(poll) }, { status: 201 });
+        return NextResponse.json({
+            poll: enrichPoll(poll),
+            pollId: poll.id,
+            shareUrl: `/poll/${poll.id}`,
+        }, { status: 201 });
     } catch {
         return NextResponse.json({ error: 'Invalid request body' }, { status: 400 });
     }
