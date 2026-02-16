@@ -1,0 +1,18 @@
+{
+    "accountAssociation": {
+        "header": "eyJmaWQiOiA5OTk5LCAidHlwZSI6ICJjdXN0b2R5IiwgImtleSI6ICIweDEyMzQ1Njc4OTAifQ",
+        "payload": "eyJkb21haW4iOiAicXVpY2twb2xsLmJhc2UuYXBwIn0",
+        "signature": "MHg..."
+    },
+    "frame": {
+        "version": "1",
+        "name": "Quick Poll",
+        "iconUrl": "https://quickpoll.base.app/icon.svg",
+        "homeUrl": "https://quickpoll.base.app",
+        "imageUrl": "https://quickpoll.base.app/hero.svg",
+        "buttonTitle": "Launch Polls",
+        "splashImageUrl": "https://quickpoll.base.app/splash.svg",
+        "splashBackgroundColor": "#0F172A",
+        "webhookUrl": "https://quickpoll.base.app/api/webhook"
+    }
+}
