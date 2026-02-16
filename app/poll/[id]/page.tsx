@@ -8,6 +8,8 @@ import ThisOrThat from '@/app/components/poll/ThisOrThat';
 import ResultCard from '@/app/components/poll/ResultCard';
 import ReactionBar from '@/app/components/social/ReactionBar';
 import ShareButton from '@/app/components/social/ShareButton';
+import OnchainProof from '@/app/components/onchain/OnchainProof';
+import OnchainSaveButton from '@/app/components/onchain/OnchainSaveButton';
 import type { Poll, PollOption } from '@/lib/db';
 
 interface EnrichedPoll extends Poll {
@@ -282,6 +284,25 @@ export default function PollDetailPage() {
                         </div>
                         {hasVoted && <ReactionBar pollId={poll.id} />}
                     </div>
+                )}
+
+                {/* On-chain proof (when saved) */}
+                {poll.is_onchain && poll.onchain_tx && (
+                    <OnchainProof
+                        txHash={poll.onchain_tx}
+                        timestamp={poll.created_at}
+                    />
+                )}
+
+                {/* On-chain save button (for expired on-chain polls not yet saved) */}
+                {poll.is_onchain && !poll.onchain_tx && isExpired && (
+                    <OnchainSaveButton
+                        pollId={poll.id}
+                        question={poll.question}
+                        options={poll.options}
+                        voteCounts={poll.voteCounts || {}}
+                        totalVotes={poll.total_votes}
+                    />
                 )}
 
                 {/* Result card toggle */}

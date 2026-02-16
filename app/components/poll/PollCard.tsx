@@ -6,6 +6,8 @@ import Timer from '../ui/Timer';
 import VoterAvatars from '../social/VoterAvatars';
 import ShareSheet from '@/app/components/social/ShareSheet';
 import DemographicBreakdown from '@/app/components/social/DemographicBreakdown';
+import OnchainSaveButton from '@/app/components/onchain/OnchainSaveButton';
+import { BASESCAN_URL } from '@/lib/contractConfig';
 import type { Poll, PollOption } from '@/lib/db';
 import { timeAgo } from '@/lib/farcaster';
 
@@ -199,17 +201,35 @@ export default function PollCard({
                         </span>
                     )}
                     {poll.is_onchain && (
-                        <span
-                            className="text-[11px] font-medium"
-                            style={{
-                                padding: '2px 8px',
-                                borderRadius: 'var(--radius-full)',
-                                background: 'rgba(139, 92, 246, 0.15)',
-                                color: 'var(--accent-purple)',
-                            }}
-                        >
-                            ⛓ On-chain
-                        </span>
+                        poll.onchain_tx ? (
+                            <a
+                                href={`${BASESCAN_URL}/tx/${poll.onchain_tx}`}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="text-[11px] font-medium transition-colors"
+                                style={{
+                                    padding: '2px 8px',
+                                    borderRadius: 'var(--radius-full)',
+                                    background: 'rgba(34, 197, 94, 0.12)',
+                                    color: 'var(--accent-green)',
+                                    textDecoration: 'none',
+                                }}
+                            >
+                                ⛓️ Saved on Base
+                            </a>
+                        ) : (
+                            <span
+                                className="text-[11px] font-medium"
+                                style={{
+                                    padding: '2px 8px',
+                                    borderRadius: 'var(--radius-full)',
+                                    background: 'rgba(139, 92, 246, 0.15)',
+                                    color: 'var(--accent-purple)',
+                                }}
+                            >
+                                ⛓ On-chain
+                            </span>
+                        )
                     )}
                     {poll.expires_at && !isExpired && <Timer expiresAt={poll.expires_at} compact />}
                     {isExpired && (
@@ -303,6 +323,19 @@ export default function PollCard({
             {/* Demographic Breakdown */}
             {hasVoted && !poll.is_anonymous && (
                 <DemographicBreakdown pollId={poll.id} userFid={9999} hasVoted={hasVoted} />
+            )}
+
+            {/* On-chain save button (for expired on-chain polls not yet saved) */}
+            {poll.is_onchain && !poll.onchain_tx && isExpired && (
+                <div style={{ marginTop: 'var(--space-2)' }}>
+                    <OnchainSaveButton
+                        pollId={poll.id}
+                        question={poll.question}
+                        options={poll.options}
+                        voteCounts={localCounts}
+                        totalVotes={localTotal}
+                    />
+                </div>
             )}
 
             {/* Footer */}

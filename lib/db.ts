@@ -731,3 +731,11 @@ export function getUserStats(fid: number): UserStatsData {
     votingHistory,
   };
 }
+
+/** Update poll's on-chain transaction hash after saving to Base */
+export function updatePollOnchainTx(pollId: string, txHash: string): boolean {
+  const poll = polls.find(p => p.id === pollId);
+  if (!poll) return false;
+  poll.onchain_tx = txHash;
+  return true;
+}
