@@ -4,7 +4,8 @@ import { useState, useCallback, useRef } from 'react';
 import ProgressBar from '../ui/ProgressBar';
 import Timer from '../ui/Timer';
 import VoterAvatars from '../social/VoterAvatars';
-import ShareButton from '@/app/components/social/ShareButton';
+import ShareSheet from '@/app/components/social/ShareSheet';
+import DemographicBreakdown from '@/app/components/social/DemographicBreakdown';
 import type { Poll, PollOption } from '@/lib/db';
 import { timeAgo } from '@/lib/farcaster';
 
@@ -17,6 +18,7 @@ interface EnrichedPoll extends Poll {
     majorityOptionId?: string | null;
     recentVoters?: { fid: number; username: string; avatar: string | null }[];
     reactions?: { fid: number; username: string; reaction: string; avatar: string | null }[];
+    totalReactions?: number;
 }
 
 interface PollCardProps {
@@ -39,6 +41,8 @@ export default function PollCard({
     const [showConfetti, setShowConfetti] = useState(false);
     const [reactionText, setReactionText] = useState('');
     const [reactionSubmitted, setReactionSubmitted] = useState(!!poll.userReaction);
+    const [showShareSheet, setShowShareSheet] = useState(false);
+    const [showAllReactions, setShowAllReactions] = useState(false);
 
     // Prediction mode state
     const [showPrediction, setShowPrediction] = useState(false);
@@ -225,9 +229,31 @@ export default function PollCard({
             </div>
 
             {/* Question */}
-            <h3 className="text-poll-question" style={{ marginBottom: 'var(--space-3)' }}>
+            <h3 className="text-poll-question" style={{ marginBottom: poll.tagged_usernames && poll.tagged_usernames.length > 0 ? 'var(--space-1)' : 'var(--space-3)' }}>
                 {poll.question}
             </h3>
+
+            {/* Tagged friends */}
+            {poll.tagged_usernames && poll.tagged_usernames.length > 0 && (
+                <div className="text-[12px]" style={{ color: 'var(--text-tertiary)', marginBottom: 'var(--space-3)' }}>
+                    Asked to{' '}
+                    {poll.tagged_usernames.length <= 2
+                        ? poll.tagged_usernames.map((u, i) => (
+                            <span key={u}>
+                                <span style={{ color: 'var(--accent-blue)' }}>@{u}</span>
+                                {i < poll.tagged_usernames!.length - 1 && ' and '}
+                            </span>
+                        ))
+                        : (
+                            <>
+                                <span style={{ color: 'var(--accent-blue)' }}>@{poll.tagged_usernames[0]}</span>,{' '}
+                                <span style={{ color: 'var(--accent-blue)' }}>@{poll.tagged_usernames[1]}</span>,{' '}
+                                and {poll.tagged_usernames.length - 2} other{poll.tagged_usernames.length - 2 > 1 ? 's' : ''}
+                            </>
+                        )
+                    }
+                </div>
+            )}
 
             {/* Options */}
             <div className="flex flex-col" style={{ gap: 'var(--space-2)' }}>
@@ -274,6 +300,11 @@ export default function PollCard({
                 </div>
             )}
 
+            {/* Demographic Breakdown */}
+            {hasVoted && !poll.is_anonymous && (
+                <DemographicBreakdown pollId={poll.id} userFid={9999} hasVoted={hasVoted} />
+            )}
+
             {/* Footer */}
             <div
                 className="flex items-center justify-between"
@@ -285,7 +316,13 @@ export default function PollCard({
             >
                 <div className="flex items-center" style={{ gap: 'var(--space-3)' }}>
                     {!poll.is_anonymous && poll.recentVoters && poll.recentVoters.length > 0 && (
-                        <VoterAvatars pollId={poll.id} limit={5} voters={poll.recentVoters} />
+                        <VoterAvatars
+                            pollId={poll.id}
+                            totalVotes={localTotal}
+                            limit={5}
+                            voters={poll.recentVoters}
+                            isAnonymous={poll.is_anonymous}
+                        />
                     )}
                     <span className="text-metadata tabular-nums">
                         {localTotal} vote{localTotal !== 1 ? 's' : ''}
@@ -294,20 +331,60 @@ export default function PollCard({
                         <Timer expiresAt={poll.expires_at} compact />
                     )}
                 </div>
-                <ShareButton pollId={poll.id} question={poll.question} />
+                <button
+                    onClick={() => setShowShareSheet(true)}
+                    className="flex items-center transition-colors touch-target"
+                    style={{
+                        gap: 'var(--space-1)',
+                        padding: 'var(--space-1) var(--space-2)',
+                        borderRadius: 'var(--radius-sm)',
+                        fontSize: '13px',
+                        color: 'var(--text-secondary)',
+                        background: 'transparent',
+                        border: 'none',
+                    }}
+                    aria-label="Share poll"
+                >
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <circle cx="18" cy="5" r="3" />
+                        <circle cx="6" cy="12" r="3" />
+                        <circle cx="18" cy="19" r="3" />
+                        <line x1="8.59" y1="13.51" x2="15.42" y2="17.49" />
+                        <line x1="15.41" y1="6.51" x2="8.59" y2="10.49" />
+                    </svg>
+                    {isExpired ? 'Share Results' : 'Share'}
+                </button>
             </div>
 
-            {/* Reactions section (after voting) */}
+            {/* Reactions list */}
             {showResults && poll.reactions && poll.reactions.length > 0 && (
                 <div style={{ marginTop: 'var(--space-3)', paddingTop: 'var(--space-3)', borderTop: '1px solid var(--border-subtle)' }}>
-                    {poll.reactions.slice(0, 2).map((r, i) => (
+                    {(showAllReactions ? poll.reactions : poll.reactions.slice(0, 3)).map((r, i) => (
                         <div key={i} className="flex items-center text-[13px]" style={{ gap: 'var(--space-2)', marginBottom: 'var(--space-1)' }}>
-                            <span style={{ color: 'var(--accent-blue)' }}>
-                                {poll.is_anonymous ? '🔒' : `@${r.username}`}
+                            <div
+                                className="rounded-full flex items-center justify-center text-[9px] font-bold text-white flex-shrink-0"
+                                style={{
+                                    width: '22px', height: '22px',
+                                    background: poll.is_anonymous ? 'var(--text-tertiary)' : `hsl(${(r.fid * 137.508) % 360}, 55%, 45%)`,
+                                }}
+                            >
+                                {poll.is_anonymous ? '?' : r.username.charAt(0).toUpperCase()}
+                            </div>
+                            <span style={{ color: 'var(--accent-blue)', fontWeight: 500 }}>
+                                {poll.is_anonymous ? 'Anonymous' : `@${r.username}`}
                             </span>
-                            <span className="text-reaction">{r.reaction}</span>
+                            <span className="text-reaction" style={{ flex: 1 }}>&ldquo;{r.reaction}&rdquo;</span>
                         </div>
                     ))}
+                    {(poll.totalReactions || poll.reactions.length) > 3 && !showAllReactions && (
+                        <button
+                            onClick={() => setShowAllReactions(true)}
+                            className="text-[12px] font-medium"
+                            style={{ color: 'var(--accent-blue)', background: 'none', border: 'none', padding: '4px 0', marginTop: '2px' }}
+                        >
+                            View all {poll.totalReactions || poll.reactions.length} reactions
+                        </button>
+                    )}
                 </div>
             )}
 
@@ -410,6 +487,15 @@ export default function PollCard({
                     </div>
                 </div>
             )}
+
+            {/* Share Sheet */}
+            <ShareSheet
+                isOpen={showShareSheet}
+                onClose={() => setShowShareSheet(false)}
+                pollId={poll.id}
+                question={poll.question}
+                isExpired={isExpired}
+            />
         </div>
     );
 }

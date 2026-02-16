@@ -238,6 +238,8 @@ export default function Home() {
     is_prediction: boolean;
     expires_at: string | null;
     is_onchain: boolean;
+    tagged_fids: number[];
+    tagged_usernames: string[];
   }) => {
     try {
       const res = await fetch('/api/polls', {
@@ -513,9 +515,7 @@ export default function Home() {
         ) : (
           <div className="flex flex-col animate-fade-in" style={{ gap: 'var(--space-4)' }}>
             <UserStats
-              pollsCreated={polls.filter(p => p.creator_fid === USER_FID).length}
-              votesGiven={12}
-              streak={5}
+              fid={USER_FID}
               username="quickpoll.dev"
             />
             <PollHistory polls={polls.filter(p => p.creator_fid === USER_FID)} />

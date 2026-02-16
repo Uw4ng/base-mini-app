@@ -54,6 +54,8 @@ export async function POST(request: NextRequest) {
             is_prediction: body.is_prediction || false,
             expires_at: body.expires_at || null,
             is_onchain: body.is_onchain || false,
+            tagged_fids: body.tagged_fids || [],
+            tagged_usernames: body.tagged_usernames || [],
         });
 
         return NextResponse.json({

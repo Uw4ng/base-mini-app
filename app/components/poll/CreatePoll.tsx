@@ -2,6 +2,7 @@
 
 import { useState, useRef, useEffect } from 'react';
 import { v4 as uuidv4 } from 'uuid';
+import FriendTagger from '../social/FriendTagger';
 
 type PollType = 'standard' | 'image' | 'this_or_that' | 'rating';
 type ExpiresIn = null | '1h' | '6h' | '12h' | '24h' | '48h';
@@ -15,6 +16,8 @@ interface CreatePollProps {
         is_prediction: boolean;
         expires_at: string | null;
         is_onchain: boolean;
+        tagged_fids: number[];
+        tagged_usernames: string[];
     }) => void;
     onClose?: () => void;
 }
@@ -63,6 +66,8 @@ export default function CreatePoll({ onSubmit, onClose }: CreatePollProps) {
     const [isOnchain, setIsOnchain] = useState(false);
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [touched, setTouched] = useState(false);
+    const [showFriendTagger, setShowFriendTagger] = useState(false);
+    const [taggedFriends, setTaggedFriends] = useState<{ fid: number; username: string }[]>([]);
 
     const textareaRef = useRef<HTMLTextAreaElement>(null);
 
@@ -188,6 +193,8 @@ export default function CreatePoll({ onSubmit, onClose }: CreatePollProps) {
             is_prediction: isPrediction,
             expires_at: getExpiryDate(expiresIn),
             is_onchain: isOnchain,
+            tagged_fids: taggedFriends.map(f => f.fid),
+            tagged_usernames: taggedFriends.map(f => f.username),
         });
 
         setIsSubmitting(false);
@@ -559,6 +566,56 @@ export default function CreatePoll({ onSubmit, onClose }: CreatePollProps) {
                     </div>
                 </div>
             )}
+
+            {/* ================================ */}
+            {/* TAG FRIENDS                       */}
+            {/* ================================ */}
+
+            <div>
+                <button
+                    onClick={() => setShowFriendTagger(true)}
+                    className="flex items-center transition-colors"
+                    style={{
+                        gap: '6px',
+                        padding: '10px 14px',
+                        borderRadius: 'var(--radius-sm)',
+                        background: 'var(--bg-tertiary)',
+                        border: '1px dashed var(--border-default)',
+                        color: 'var(--text-secondary)',
+                        fontSize: '13px',
+                        fontWeight: 500,
+                        width: '100%',
+                    }}
+                >
+                    🏷️ {taggedFriends.length > 0 ? `${taggedFriends.length} friend${taggedFriends.length > 1 ? 's' : ''} tagged` : 'Tag friends (optional)'}
+                </button>
+                {taggedFriends.length > 0 && (
+                    <div className="flex flex-wrap" style={{ gap: '4px', marginTop: '6px' }}>
+                        {taggedFriends.map(f => (
+                            <span
+                                key={f.fid}
+                                className="text-[11px] font-medium"
+                                style={{
+                                    padding: '3px 8px',
+                                    borderRadius: 'var(--radius-full)',
+                                    background: 'rgba(59, 130, 246, 0.12)',
+                                    color: 'var(--accent-blue)',
+                                }}
+                            >
+                                @{f.username}
+                            </span>
+                        ))}
+                    </div>
+                )}
+            </div>
+
+            <FriendTagger
+                isOpen={showFriendTagger}
+                onClose={() => setShowFriendTagger(false)}
+                selectedFriends={taggedFriends}
+                onSelect={setTaggedFriends}
+                maxTags={5}
+            />
 
             {/* ================================ */}
             {/* SETTINGS                         */}

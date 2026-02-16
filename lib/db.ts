@@ -25,6 +25,27 @@ export interface Poll {
   onchain_tx: string | null;
   created_at: string;
   total_votes: number;
+  tagged_fids: number[];
+  tagged_usernames: string[];
+}
+
+export interface FarcasterUser {
+  fid: number;
+  username: string;
+  displayName: string;
+  avatar: string | null;
+  isMutual: boolean;
+}
+
+export interface UserStatsData {
+  totalVotes: number;
+  pollsCreated: number;
+  majorityPercent: number;
+  streak: number;
+  mostActiveDay: string;
+  topCategory: string;
+  funLabel: string;
+  votingHistory: { pollId: string; question: string; optionId: string; created_at: string }[];
 }
 
 export interface Vote {
@@ -54,6 +75,23 @@ export interface DailyQuestion {
 const polls: Poll[] = [];
 const votes: Vote[] = [];
 const dailyQuestions: DailyQuestion[] = [];
+
+// Mock Farcaster friends/mutuals
+const farcasterUsers: FarcasterUser[] = [
+  { fid: 1001, username: 'alice', displayName: 'Alice ✨', avatar: null, isMutual: true },
+  { fid: 1002, username: 'bob', displayName: 'Bob Builder', avatar: null, isMutual: true },
+  { fid: 1003, username: 'charlie', displayName: 'Charlie', avatar: null, isMutual: true },
+  { fid: 1004, username: 'diana', displayName: 'Diana 🎨', avatar: null, isMutual: true },
+  { fid: 1005, username: 'eve', displayName: 'Eve dev', avatar: null, isMutual: true },
+  { fid: 1006, username: 'frank', displayName: 'Frank', avatar: null, isMutual: true },
+  { fid: 1007, username: 'grace', displayName: 'Grace 🚀', avatar: null, isMutual: true },
+  { fid: 1008, username: 'hank', displayName: 'Hank', avatar: null, isMutual: false },
+  { fid: 1009, username: 'iris', displayName: 'Iris', avatar: null, isMutual: true },
+  { fid: 1010, username: 'jack', displayName: 'Jack Builder', avatar: null, isMutual: true },
+  { fid: 2000, username: 'nft_lover', displayName: 'NFT Lover', avatar: null, isMutual: false },
+  { fid: 2001, username: 'defi_queen', displayName: 'DeFi Queen', avatar: null, isMutual: false },
+  { fid: 2002, username: 'based_dev', displayName: 'Based Dev', avatar: null, isMutual: false },
+];
 
 // ============================
 // SEED DATA
@@ -103,6 +141,8 @@ function seedData() {
     onchain_tx: null,
     created_at: new Date(now.getTime() - 3600000).toISOString(),
     total_votes: 142,
+    tagged_fids: [],
+    tagged_usernames: [],
   });
 
   // Poll 2 — This or That
@@ -125,6 +165,8 @@ function seedData() {
     onchain_tx: null,
     created_at: new Date(now.getTime() - 7200000).toISOString(),
     total_votes: 89,
+    tagged_fids: [],
+    tagged_usernames: [],
   });
 
   // Poll 3 — On-chain, no expiry
@@ -149,6 +191,8 @@ function seedData() {
     onchain_tx: '0xabc123',
     created_at: new Date(now.getTime() - 86400000).toISOString(),
     total_votes: 256,
+    tagged_fids: [],
+    tagged_usernames: [],
   });
 
   // Poll 4
@@ -173,6 +217,8 @@ function seedData() {
     onchain_tx: null,
     created_at: new Date(now.getTime() - 1800000).toISOString(),
     total_votes: 67,
+    tagged_fids: [1001, 1002],
+    tagged_usernames: ['alice', 'bob'],
   });
 
   // Poll 5 — Anonymous
@@ -197,6 +243,8 @@ function seedData() {
     onchain_tx: null,
     created_at: new Date(now.getTime() - 900000).toISOString(),
     total_votes: 203,
+    tagged_fids: [],
+    tagged_usernames: [],
   });
 
   // Poll 6 — Expired
@@ -221,6 +269,8 @@ function seedData() {
     onchain_tx: null,
     created_at: new Date(now.getTime() - 86400000 * 2).toISOString(),
     total_votes: 412,
+    tagged_fids: [],
+    tagged_usernames: [],
   });
 
   // Seed votes for all polls
@@ -373,6 +423,8 @@ export function createPoll(data: {
   is_prediction?: boolean;
   expires_at?: string | null;
   is_onchain?: boolean;
+  tagged_fids?: number[];
+  tagged_usernames?: string[];
 }): Poll {
   const poll: Poll = {
     id: uuidv4(),
@@ -389,6 +441,8 @@ export function createPoll(data: {
     onchain_tx: null,
     created_at: new Date().toISOString(),
     total_votes: 0,
+    tagged_fids: data.tagged_fids || [],
+    tagged_usernames: data.tagged_usernames || [],
   };
   polls.unshift(poll);
   return poll;
@@ -518,7 +572,7 @@ export function enrichPoll(poll: Poll, userFid?: number) {
   const voteCounts = getVoteCountsByOption(poll.id);
   const userVote = userFid ? hasUserVoted(poll.id, userFid) : undefined;
   const recentVoters = poll.is_anonymous ? [] : getRecentVoters(poll.id, 5);
-  const reactions = getReactionsForPoll(poll.id).slice(0, 5);
+  const reactions = getReactionsForPoll(poll.id);
   const majorityOptionId = getMajorityOptionId(poll.id);
 
   return {
@@ -531,5 +585,149 @@ export function enrichPoll(poll: Poll, userFid?: number) {
     majorityOptionId,
     recentVoters,
     reactions,
+    totalReactions: reactions.length,
+    tagged_usernames: poll.tagged_usernames || [],
+    tagged_fids: poll.tagged_fids || [],
+  };
+}
+
+// ============================
+// SOCIAL FUNCTIONS
+// ============================
+
+/** Get mutuals (people you follow who follow you back) */
+export function getMutuals(fid: number): FarcasterUser[] {
+  void fid; // In production, filter by actual social graph
+  return farcasterUsers.filter(u => u.isMutual);
+}
+
+/** Search mutuals by username */
+export function searchMutuals(fid: number, query: string): FarcasterUser[] {
+  const mutuals = getMutuals(fid);
+  if (!query.trim()) return mutuals;
+  const q = query.toLowerCase();
+  return mutuals.filter(u =>
+    u.username.toLowerCase().includes(q) ||
+    u.displayName.toLowerCase().includes(q)
+  );
+}
+
+/** Get all voters for a poll with option details and friend status */
+export function getVoterDetails(pollId: string, userFid?: number): {
+  fid: number;
+  username: string;
+  avatar: string | null;
+  optionId: string;
+  optionText: string;
+  isFollowing: boolean;
+}[] {
+  const poll = getPollById(pollId);
+  if (!poll) return [];
+  const mutualFids = userFid ? new Set(getMutuals(userFid).map(m => m.fid)) : new Set<number>();
+
+  return votes
+    .filter(v => v.poll_id === pollId)
+    .map(v => {
+      const option = poll.options.find(o => o.id === v.option_id);
+      return {
+        fid: v.voter_fid,
+        username: v.voter_username,
+        avatar: v.voter_avatar,
+        optionId: v.option_id,
+        optionText: option?.text || 'Unknown',
+        isFollowing: mutualFids.has(v.voter_fid),
+      };
+    })
+    .sort((a, b) => (a.isFollowing === b.isFollowing ? 0 : a.isFollowing ? -1 : 1));
+}
+
+/** Get network demographic breakdown for a poll */
+export function getNetworkBreakdown(pollId: string, userFid: number): {
+  hasEnoughData: boolean;
+  network: Record<string, { optionText: string; percent: number }>;
+  everyone: Record<string, { optionText: string; percent: number }>;
+} | null {
+  const poll = getPollById(pollId);
+  if (!poll) return null;
+
+  const allVotes = votes.filter(v => v.poll_id === pollId);
+  if (allVotes.length < 10) return { hasEnoughData: false, network: {}, everyone: {} };
+
+  const mutualFids = new Set(getMutuals(userFid).map(m => m.fid));
+  const networkVotes = allVotes.filter(v => mutualFids.has(v.voter_fid));
+  const otherVotes = allVotes.filter(v => !mutualFids.has(v.voter_fid));
+
+  const calcBreakdown = (voteSubset: Vote[]) => {
+    const total = voteSubset.length;
+    if (total === 0) return {};
+    const counts: Record<string, number> = {};
+    for (const v of voteSubset) counts[v.option_id] = (counts[v.option_id] || 0) + 1;
+    const result: Record<string, { optionText: string; percent: number }> = {};
+    for (const [optId, count] of Object.entries(counts)) {
+      const opt = poll.options.find(o => o.id === optId);
+      result[optId] = { optionText: opt?.text || 'Unknown', percent: Math.round((count / total) * 100) };
+    }
+    return result;
+  };
+
+  return {
+    hasEnoughData: true,
+    network: calcBreakdown(networkVotes),
+    everyone: calcBreakdown(otherVotes),
+  };
+}
+
+/** Get user statistics */
+export function getUserStats(fid: number): UserStatsData {
+  const userVotes = votes.filter(v => v.voter_fid === fid);
+  const userPolls = polls.filter(p => p.creator_fid === fid);
+
+  // Calculate majority %
+  let majorityCount = 0;
+  for (const v of userVotes) {
+    const maj = getMajorityOptionId(v.poll_id);
+    if (maj && v.option_id === maj) majorityCount++;
+  }
+  const majorityPercent = userVotes.length > 0
+    ? Math.round((majorityCount / userVotes.length) * 100)
+    : 0;
+
+  // Fun label based on majority %
+  let funLabel = 'Newcomer 🌱';
+  if (userVotes.length >= 5) {
+    if (majorityPercent >= 70) funLabel = 'Crowd Follower 🐑';
+    else if (majorityPercent >= 50) funLabel = 'Balanced Voter ⚖️';
+    else if (majorityPercent >= 40) funLabel = 'Free Thinker 🧠';
+    else funLabel = 'Independent Thinker 🎯';
+  }
+
+  // Most active day
+  const dayCounts: Record<string, number> = {};
+  for (const v of userVotes) {
+    const day = new Date(v.created_at).toLocaleDateString('en-US', { weekday: 'long' });
+    dayCounts[day] = (dayCounts[day] || 0) + 1;
+  }
+  const mostActiveDay = Object.entries(dayCounts).sort((a, b) => b[1] - a[1])[0]?.[0] || 'N/A';
+
+  // Voting history
+  const votingHistory = userVotes.map(v => {
+    const poll = getPollById(v.poll_id);
+    return {
+      pollId: v.poll_id,
+      question: poll?.question || 'Unknown poll',
+      optionId: v.option_id,
+      created_at: v.created_at,
+    };
+  }).sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+
+  return {
+    totalVotes: userVotes.length,
+    pollsCreated: userPolls.length,
+    majorityPercent,
+    streak: 5, // Mock streak
+    mostActiveDay,
+    topCategory: 'Tech 💻', // Mock category
+    funLabel,
+    votingHistory,
   };
 }
