@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import "@coinbase/onchainkit/styles.css";
 import "./globals.css";
 import Providers from "./providers";
 import { ToastProvider } from "./components/ui/ToastProvider";
