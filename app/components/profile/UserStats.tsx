@@ -38,7 +38,7 @@ export default function UserStats({ fid, username }: UserStatsProps) {
                 style={{
                     background: 'var(--bg-secondary)',
                     border: '1px solid var(--border-subtle)',
-                    borderRadius: 'var(--radius-md)',
+                    borderRadius: 'var(--radius-lg)',
                     padding: 'var(--space-5)',
                 }}
             >
@@ -73,7 +73,7 @@ export default function UserStats({ fid, username }: UserStatsProps) {
                 style={{
                     background: 'var(--bg-secondary)',
                     border: '1px solid var(--border-subtle)',
-                    borderRadius: 'var(--radius-md)',
+                    borderRadius: 'var(--radius-lg)',
                     padding: 'var(--space-5)',
                 }}
             >
