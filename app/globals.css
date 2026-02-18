@@ -475,8 +475,8 @@ body {
 /* Confetti dot */
 .confetti-dot {
   position: absolute;
-  width: 6px;
-  height: 6px;
+  width: 8px;
+  height: 8px;
   border-radius: 50%;
   animation: confettiBurst 300ms ease-out forwards;
 }
