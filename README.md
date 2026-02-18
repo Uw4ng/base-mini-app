@@ -40,6 +40,7 @@ Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/bui
 
 
 
+<<<<<<< HEAD
 <!-- Polish 1 -->
 
 <!-- Polish 2 -->
@@ -65,3 +66,9 @@ Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/bui
 <!-- Polish 12 -->
 
 <!-- Polish 13 -->
+=======
+
+
+>>>>>>> 9ecc5533a01615113ff6e16a66fa9d06054e97f2
+
+<!-- Polish 1 -->
