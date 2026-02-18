@@ -137,7 +137,7 @@ export default function UserStats({ fid, username }: UserStatsProps) {
                             <div className="text-stat-number animate-count-up" style={{ color: stat.color }}>
                                 {stat.value}
                             </div>
-                            <div className="text-stat-label" style={{ marginTop: 'var(--space-1)' }}>
+                            <div className="text-stat-label font-medium" style={{ marginTop: 'var(--space-1)' }}>
                                 {stat.label}
                             </div>
                         </div>
