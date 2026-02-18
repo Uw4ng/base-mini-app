@@ -42,7 +42,7 @@ export default function UserStats({ fid, username }: UserStatsProps) {
                     padding: 'var(--space-5)',
                 }}
             >
-                <div className="flex items-center" style={{ gap: 'var(--space-3)', marginBottom: 'var(--space-4)' }}>
+                <div className="flex items-center" style={{ gap: 'var(--space-4)', marginBottom: 'var(--space-4)' }}>
                     <div className="skeleton" style={{ width: '56px', height: '56px', borderRadius: '50%' }} />
                     <div className="flex-1">
                         <div className="skeleton" style={{ width: '120px', height: '16px', marginBottom: '6px' }} />
@@ -79,7 +79,7 @@ export default function UserStats({ fid, username }: UserStatsProps) {
             >
                 {/* Avatar & username */}
                 <div className="flex items-center justify-between" style={{ marginBottom: 'var(--space-4)' }}>
-                    <div className="flex items-center" style={{ gap: 'var(--space-3)' }}>
+                    <div className="flex items-center" style={{ gap: 'var(--space-4)' }}>
                         <div
                             className="rounded-full flex items-center justify-center text-xl font-bold text-white"
                             style={{
@@ -220,7 +220,7 @@ export default function UserStats({ fid, username }: UserStatsProps) {
                                     background: 'var(--bg-tertiary)',
                                     border: '1px solid var(--border-subtle)',
                                     borderRadius: 'var(--radius-sm)',
-                                    gap: 'var(--space-3)',
+                                    gap: 'var(--space-4)',
                                 }}
                             >
                                 <div className="text-[16px]">🗳️</div>
