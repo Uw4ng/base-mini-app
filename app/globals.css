@@ -79,7 +79,7 @@ body {
   color: var(--text-primary);
   font-family: 'Inter', var(--font-sans, -apple-system, BlinkMacSystemFont, sans-serif);
   font-size: 16px;
-  line-height: 1.4;
+  line-height: 1.5;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   overflow-x: hidden;
@@ -99,21 +99,21 @@ body {
 .text-option {
   font-size: 16px;
   font-weight: 500;
-  line-height: 1.4;
+  line-height: 1.5;
   color: var(--text-primary);
 }
 
 .text-metadata {
   font-size: 13px;
   font-weight: 400;
-  line-height: 1.4;
+  line-height: 1.5;
   color: #94A3B8;
 }
 
 .text-reaction {
   font-size: 14px;
   font-weight: 400;
-  line-height: 1.4;
+  line-height: 1.5;
   color: var(--text-secondary);
 }
 
