@@ -33,7 +33,7 @@ export default function TrendingPolls({ polls: initialPolls, onPollClick }: Tren
     if (loading) {
         return (
             <div style={{ marginBottom: 'var(--space-4)' }}>
-                <div className="flex items-center" style={{ gap: 'var(--space-2)', marginBottom: 'var(--space-3)', paddingLeft: 'var(--space-1)' }}>
+                <div className="flex items-center" style={{ gap: 'var(--space-2)', marginBottom: 'var(--space-4)', paddingLeft: 'var(--space-1)' }}>
                     <span>🔥</span>
                     <span className="text-[14px] font-bold">Trending</span>
                 </div>
@@ -58,7 +58,7 @@ export default function TrendingPolls({ polls: initialPolls, onPollClick }: Tren
 
     return (
         <div style={{ marginBottom: 'var(--space-4)' }}>
-            <div className="flex items-center" style={{ gap: 'var(--space-2)', marginBottom: 'var(--space-3)', paddingLeft: 'var(--space-1)' }}>
+            <div className="flex items-center" style={{ gap: 'var(--space-2)', marginBottom: 'var(--space-4)', paddingLeft: 'var(--space-1)' }}>
                 <span>🔥</span>
                 <span className="text-[14px] font-bold">Trending</span>
             </div>
