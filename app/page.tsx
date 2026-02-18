@@ -12,20 +12,7 @@ import UserStats from './components/profile/UserStats';
 import PollHistory from './components/profile/PollHistory';
 import type { Poll } from '@/lib/db';
 import { useMiniKit } from './context/MiniKitContext';
-import {
-  ConnectWallet,
-  Wallet,
-  WalletDropdown,
-  WalletDropdownLink,
-  WalletDropdownDisconnect,
-} from '@coinbase/onchainkit/wallet';
-import {
-  Address,
-  Avatar,
-  Name,
-  Identity,
-  EthBalance,
-} from '@coinbase/onchainkit/identity';
+import { ConnectButton } from '@rainbow-me/rainbowkit';
 
 type TabType = 'feed' | 'profile';
 
@@ -515,24 +502,7 @@ export default function Home() {
 
             {/* User avatar */}
             {/* User avatar / Wallet */}
-            <Wallet>
-              <ConnectWallet className="bg-transparent text-white p-0 h-8 min-w-0 border-none hover:bg-[var(--bg-secondary)] transition-colors">
-                <Avatar className="h-8 w-8 !bg-[var(--accent-purple)] text-white font-bold" />
-                <Name className="hidden" />
-              </ConnectWallet>
-              <WalletDropdown>
-                <Identity className="px-4 pt-3 pb-2" hasCopyAddressOnClick>
-                  <Avatar />
-                  <Name />
-                  <Address />
-                  <EthBalance />
-                </Identity>
-                <WalletDropdownLink icon="wallet" href="https://keys.coinbase.com">
-                  Wallet
-                </WalletDropdownLink>
-                <WalletDropdownDisconnect />
-              </WalletDropdown>
-            </Wallet>
+            <ConnectButton showBalance={false} accountStatus="avatar" chainStatus="icon" />
           </div>
         </div>
       </header>
