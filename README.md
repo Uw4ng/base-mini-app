@@ -94,3 +94,5 @@ Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/bui
 <!-- Polish 11 -->
 
 <!-- Polish 12 -->
+
+<!-- Polish 13 -->
