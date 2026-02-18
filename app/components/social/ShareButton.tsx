@@ -47,7 +47,7 @@ export default function ShareButton({ pollId, question }: ShareButtonProps) {
                 gap: 'var(--space-1)',
                 padding: 'var(--space-1) var(--space-2)',
                 borderRadius: 'var(--radius-sm)',
-                fontSize: '13px',
+                fontSize: '14px',
                 color: 'var(--text-secondary)',
                 background: 'transparent',
                 border: 'none',
