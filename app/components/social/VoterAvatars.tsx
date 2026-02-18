@@ -80,7 +80,7 @@ export default function VoterAvatars({
                     ))}
                 </div>
                 {remaining > 0 && (
-                    <span className="text-[11px] tabular-nums" style={{ color: 'var(--text-tertiary)', marginLeft: 'var(--space-1)' }}>
+                    <span className="text-[11px] tabular-nums" style={{ color: 'var(--text-secondary)', marginLeft: 'var(--space-1)' }}>
                         +{remaining} others voted
                     </span>
                 )}
@@ -145,7 +145,7 @@ export default function VoterAvatars({
                                             )}
                                         </div>
                                         {voter.optionText && (
-                                            <span className="text-[12px]" style={{ color: 'var(--text-tertiary)' }}>
+                                            <span className="text-[12px]" style={{ color: 'var(--text-secondary)' }}>
                                                 Voted: {voter.optionText}
                                             </span>
                                         )}
