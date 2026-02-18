@@ -358,7 +358,7 @@ body {
 .poll-option {
   background: var(--bg-tertiary);
   border: 1px solid var(--border-subtle);
-  border-radius: var(--radius-sm);
+  border-radius: var(--radius-md);
   padding: 16px 20px;
   min-height: 48px;
   transition: all 0.15s ease;
@@ -378,7 +378,7 @@ body {
 /* Poll Option (result state) */
 .poll-result {
   background: var(--bg-tertiary);
-  border-radius: var(--radius-sm);
+  border-radius: var(--radius-md);
   padding: 16px 20px;
   min-height: 48px;
   position: relative;
@@ -390,7 +390,7 @@ body {
   top: 0;
   left: 0;
   height: 100%;
-  border-radius: var(--radius-sm);
+  border-radius: var(--radius-md);
   transition: width 600ms ease-out;
 }
 
@@ -461,7 +461,7 @@ body {
   background: linear-gradient(90deg, var(--bg-tertiary) 25%, var(--bg-hover) 50%, var(--bg-tertiary) 75%);
   background-size: 200% 100%;
   animation: shimmer 1.5s infinite;
-  border-radius: var(--radius-sm);
+  border-radius: var(--radius-md);
 }
 
 /* Gradient text */
