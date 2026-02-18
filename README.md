@@ -80,3 +80,5 @@ Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/bui
 <!-- Polish 4 -->
 
 <!-- Polish 5 -->
+
+<!-- Polish 6 -->
