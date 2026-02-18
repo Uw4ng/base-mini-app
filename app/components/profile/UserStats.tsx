@@ -36,7 +36,7 @@ export default function UserStats({ fid, username }: UserStatsProps) {
         return (
             <div
                 style={{
-                    background: 'var(--bg-secondary)',
+                    background: 'var(--bg-tertiary)',
                     border: '1px solid var(--border-subtle)',
                     borderRadius: 'var(--radius-lg)',
                     padding: 'var(--space-5)',
@@ -71,7 +71,7 @@ export default function UserStats({ fid, username }: UserStatsProps) {
             {/* Profile Card */}
             <div
                 style={{
-                    background: 'var(--bg-secondary)',
+                    background: 'var(--bg-tertiary)',
                     border: '1px solid var(--border-subtle)',
                     borderRadius: 'var(--radius-lg)',
                     padding: 'var(--space-5)',
@@ -217,7 +217,7 @@ export default function UserStats({ fid, username }: UserStatsProps) {
                                 className="flex items-start"
                                 style={{
                                     padding: 'var(--space-3)',
-                                    background: 'var(--bg-secondary)',
+                                    background: 'var(--bg-tertiary)',
                                     border: '1px solid var(--border-subtle)',
                                     borderRadius: 'var(--radius-sm)',
                                     gap: 'var(--space-3)',
