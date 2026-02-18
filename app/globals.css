@@ -359,7 +359,7 @@ body {
   background: var(--bg-tertiary);
   border: 1px solid var(--border-subtle);
   border-radius: var(--radius-sm);
-  padding: 14px 16px;
+  padding: 16px 20px;
   min-height: 48px;
   transition: all 0.15s ease;
   cursor: pointer;
@@ -379,7 +379,7 @@ body {
 .poll-result {
   background: var(--bg-tertiary);
   border-radius: var(--radius-sm);
-  padding: 14px 16px;
+  padding: 16px 20px;
   min-height: 48px;
   position: relative;
   overflow: hidden;
