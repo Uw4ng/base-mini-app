@@ -420,7 +420,7 @@ body {
   width: 56px;
   height: 56px;
   border-radius: 50%;
-  background: var(--accent-blue);
+  background: linear-gradient(135deg, var(--accent-blue), var(--accent-purple));
   color: white;
   border: none;
   display: flex;
