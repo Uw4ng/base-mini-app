@@ -58,7 +58,7 @@ export default function ShareButton({ pollId, question }: ShareButtonProps) {
                 <span className="animate-fade-in" style={{ color: 'var(--accent-green)', fontWeight: 600 }}>✓ Copied</span>
             ) : (
                 <>
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                         <circle cx="18" cy="5" r="3" />
                         <circle cx="6" cy="12" r="3" />
                         <circle cx="18" cy="19" r="3" />
