@@ -37,7 +37,7 @@ export default function TrendingPolls({ polls: initialPolls, onPollClick }: Tren
                     <span>🔥</span>
                     <span className="text-[14px] font-bold">Trending</span>
                 </div>
-                <div className="flex overflow-x-auto" style={{ gap: 'var(--space-3)', paddingBottom: 'var(--space-2)', scrollbarWidth: 'none' }}>
+                <div className="flex overflow-x-auto" style={{ gap: 'var(--space-4)', paddingBottom: 'var(--space-2)', scrollbarWidth: 'none' }}>
                     {[1, 2, 3].map(i => (
                         <div key={i} className="skeleton flex-shrink-0" style={{ width: '208px', height: '96px', borderRadius: 'var(--radius-md)' }} />
                     ))}
@@ -62,7 +62,7 @@ export default function TrendingPolls({ polls: initialPolls, onPollClick }: Tren
                 <span>🔥</span>
                 <span className="text-[14px] font-bold">Trending</span>
             </div>
-            <div className="flex overflow-x-auto" style={{ gap: 'var(--space-3)', paddingBottom: 'var(--space-2)', scrollbarWidth: 'none' }}>
+            <div className="flex overflow-x-auto" style={{ gap: 'var(--space-4)', paddingBottom: 'var(--space-2)', scrollbarWidth: 'none' }}>
                 {polls.map((poll, index) => {
                     const color = accentColors[index % accentColors.length];
                     return (
