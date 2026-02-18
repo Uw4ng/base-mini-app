@@ -365,7 +365,8 @@ body {
 }
 
 .poll-option:hover {
-  border-color: var(--border-focus);
+  border-color: var(--accent-blue);
+  background: var(--bg-hover);
 }
 
 .poll-option:active {
