@@ -99,7 +99,7 @@ export default function TrendingPolls({ polls: initialPolls, onPollClick }: Tren
                                 <span className="text-[11px] tabular-nums" style={{ color: 'var(--text-tertiary)' }}>
                                     {poll.total_votes} votes
                                 </span>
-                                <span className="text-[11px] font-medium" style={{ color: 'var(--accent-blue)' }}>
+                                <span className="text-[11px] font-bold" style={{ color: 'var(--accent-blue)' }}>
                                     {poll.options.length} options
                                 </span>
                             </div>
