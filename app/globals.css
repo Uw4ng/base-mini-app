@@ -300,7 +300,7 @@ body {
 }
 
 .animate-fade-in {
-  animation: fadeIn 300ms ease-out;
+  animation: fadeIn 400ms ease-out;
 }
 
 .animate-scale-in {
