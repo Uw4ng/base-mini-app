@@ -326,7 +326,7 @@ export default function Home() {
           <p className="text-metadata" style={{ marginBottom: 'var(--space-4)' }}>Create the first one!</p>
           <button
             onClick={() => setShowCreate(true)}
-            className="text-button touch-target"
+            className="text-button touch-target transition-transform hover:scale-105"
             style={{
               padding: '12px 24px',
               borderRadius: 'var(--radius-sm)',
@@ -335,7 +335,7 @@ export default function Home() {
               border: 'none',
             }}
           >
-            + Create Poll
+            Create Your First Poll
           </button>
         </div>
       );
