@@ -80,8 +80,13 @@ export default function TrendingPolls({ polls: initialPolls, onPollClick }: Tren
                             }}
                             aria-label={`View poll: ${poll.question}`}
                         >
-                            <div className="text-metadata" style={{ marginBottom: 'var(--space-1)' }}>
-                                @{poll.creator_username}
+                            <div className="flex items-center justify-between" style={{ marginBottom: 'var(--space-1)' }}>
+                                <div className="text-metadata">@{poll.creator_username}</div>
+                                {index === 0 && (
+                                    <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-full" style={{ background: 'var(--accent-red)', color: 'white' }}>
+                                        HOT
+                                    </span>
+                                )}
                             </div>
                             <div
                                 className="text-[14px] font-semibold leading-tight overflow-hidden"
