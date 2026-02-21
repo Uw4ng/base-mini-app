@@ -23,19 +23,20 @@ export default function PollHistory({ polls, onPollClick }: PollHistoryProps) {
             <h3 className="text-[13px] font-bold" style={{ color: 'var(--text-secondary)', marginBottom: 'var(--space-2)' }}>
                 Your Polls
             </h3>
-            {polls.map(poll => {
+            {polls.map((poll, index) => {
                 const isExpired = poll.expires_at ? new Date(poll.expires_at) < new Date() : false;
 
                 return (
                     <button
                         key={poll.id}
                         onClick={() => onPollClick?.(poll.id)}
-                        className="w-full text-left transition-all touch-target"
+                        className="w-full text-left transition-all touch-target animate-slide-down"
                         style={{
                             background: 'var(--bg-secondary)',
                             border: '1px solid var(--border-subtle)',
                             borderRadius: 'var(--radius-md)',
                             padding: 'var(--space-3)',
+                            animationDelay: `${index * 50}ms`,
                         }}
                     >
                         <div className="flex items-start justify-between" style={{ gap: 'var(--space-2)' }}>
