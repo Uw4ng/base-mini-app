@@ -384,7 +384,29 @@ export default function DailyQuestion({ data: initialData }: DailyQuestionProps)
                 <span className="text-metadata tabular-nums">
                     {localTotal.toLocaleString()} votes
                 </span>
-                <MidnightCountdown />
+                <div className="flex items-center" style={{ gap: 'var(--space-3)' }}>
+                    {voted && (
+                        <button
+                            onClick={() => {
+                                if (navigator.share) {
+                                    navigator.share({
+                                        title: 'Quick Poll Daily',
+                                        text: `I just voted on the Daily Question: ${data.question.question} ✨`,
+                                        url: window.location.origin
+                                    });
+                                } else {
+                                    navigator.clipboard.writeText(window.location.origin);
+                                    alert('Link copied!');
+                                }
+                            }}
+                            className="text-[11px] font-bold"
+                            style={{ color: 'var(--accent-purple)', background: 'none', border: 'none', padding: 0 }}
+                        >
+                            Share Result
+                        </button>
+                    )}
+                    <MidnightCountdown />
+                </div>
             </div>
 
             {/* Yesterday's result teaser */}
