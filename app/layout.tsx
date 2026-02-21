@@ -5,7 +5,7 @@ import Providers from "./providers";
 import { ToastProvider } from "./components/ui/ToastProvider";
 
 export const metadata: Metadata = {
-  title: "Quick Poll — Ask anything. Decide together.",
+  title: "Quick Poll — Instant Social Voting on Base",
   description: "Create instant polls, vote freely, and see real-time results. A social polling mini app for the Base ecosystem.",
   openGraph: {
     title: "Quick Poll",
