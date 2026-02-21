@@ -433,6 +433,10 @@ body {
   z-index: 30;
 }
 
+.fab:hover {
+  transform: scale(1.1);
+}
+
 .fab:active {
   transform: scale(0.92);
 }
