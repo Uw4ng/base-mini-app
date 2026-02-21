@@ -69,6 +69,7 @@ export default function Home() {
   const [loadingMore, setLoadingMore] = useState(false);
   const [nextCursor, setNextCursor] = useState<string | null>(null);
   const [refreshing, setRefreshing] = useState(false);
+  const [lastUpdated, setLastUpdated] = useState<Date>(new Date());
   const observerTarget = useRef<HTMLDivElement>(null);
   const pollIntervalRef = useRef<NodeJS.Timeout | null>(null);
 
@@ -107,7 +108,9 @@ export default function Home() {
       setPolls(feedData.polls);
       setNextCursor(feedData.nextCursor);
       setTrendingPolls(trendingRes.polls || []);
+      setTrendingPolls(trendingRes.polls || []);
       if (dailyRes.question) setDailyQuestion(dailyRes);
+      setLastUpdated(new Date());
     } catch (error) {
       console.error('Failed to fetch data:', error);
       setLoading(false);
@@ -435,9 +438,15 @@ export default function Home() {
             </div>
             <div>
               <h1 className="text-[15px] font-bold leading-tight">Quick Poll</h1>
-              <p className="text-[11px] leading-none" style={{ color: 'var(--text-tertiary)' }}>
-                Ask anything. Decide together.
-              </p>
+              <div className="flex items-center" style={{ gap: '6px' }}>
+                <p className="text-[11px] leading-none" style={{ color: 'var(--text-tertiary)' }}>
+                  Ask anything
+                </p>
+                <span style={{ width: '2px', height: '2px', borderRadius: '50%', background: 'var(--text-tertiary)' }} />
+                <p className="text-[10px] leading-none" style={{ color: 'var(--text-tertiary)', opacity: 0.8 }}>
+                  Last synced {lastUpdated.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                </p>
+              </div>
             </div>
           </div>
 
@@ -636,6 +645,20 @@ export default function Home() {
           </div>
         </div>
       )}
+      <footer className="text-center" style={{ padding: 'var(--space-8) 0', borderTop: '1px solid var(--border-subtle)' }}>
+        <p className="text-[12px]" style={{ color: 'var(--text-tertiary)', marginBottom: 'var(--space-2)' }}>
+          Built for the <span style={{ color: 'var(--accent-blue)', fontWeight: 600 }}>Base</span> ecosystem
+        </p>
+        <a
+          href="https://warpcast.com/quickpoll"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="text-[11px] font-medium transition-opacity hover:opacity-80"
+          style={{ color: 'var(--text-tertiary)', textDecoration: 'underline' }}
+        >
+          Send Feedback
+        </a>
+      </footer>
     </main>
   );
 }
