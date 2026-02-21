@@ -463,6 +463,7 @@ export default function Home() {
                 border: 'none',
                 color: 'var(--text-secondary)',
               }}
+              title="Refresh feed"
               aria-label="Refresh feed"
             >
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
