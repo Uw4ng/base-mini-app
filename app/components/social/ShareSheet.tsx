@@ -72,6 +72,17 @@ export default function ShareSheet({ isOpen, onClose, pollId, question, isExpire
             color: 'var(--accent-purple)',
         },
         {
+            icon: '𝕏',
+            label: 'Share to X',
+            description: 'Post to your X / Twitter timeline',
+            onClick: () => {
+                const text = `Check out this poll: ${question} 🗳️`;
+                window.open(`https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}&url=${encodeURIComponent(shareUrl)}`, '_blank');
+                onClose();
+            },
+            color: '#000000',
+        },
+        {
             icon: '🔗',
             label: copied ? '✓ Copied!' : 'Copy Link',
             description: 'Copy the poll URL to clipboard',
