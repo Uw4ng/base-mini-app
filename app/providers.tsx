@@ -10,7 +10,7 @@ import { Attribution } from 'ox/erc8021';
 import { OnchainKitProvider } from '@coinbase/onchainkit';
 import { MiniKitProvider } from './context/MiniKitContext';
 
-const DATA_SUFFIX = Attribution.toDataSuffix({ codes: ["quick-poll"] });
+const DATA_SUFFIX = Attribution.toDataSuffix({ codes: ["bc_zxemfnhp"] });
 
 const config = getDefaultConfig({
     appName: 'Quick Poll',
