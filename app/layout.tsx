@@ -12,6 +12,9 @@ export const metadata: Metadata = {
     description: "Create instant polls, vote freely, and see real-time results.",
     images: ["/og-image.png"],
   },
+  other: {
+    "base:app_id": "6984a8344609f1d788ad2bd6"
+  }
 };
 
 export default function RootLayout({
